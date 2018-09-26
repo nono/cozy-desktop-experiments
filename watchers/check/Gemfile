@@ -1,0 +1,8 @@
+source 'https://rubygems.org'
+
+gem "awesome_print"
+gem "minitest"
+gem "pry"
+gem "pry-rescue"
+gem "pry-stack_explorer"
+gem "rantly"

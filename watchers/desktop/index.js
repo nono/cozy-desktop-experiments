@@ -49,7 +49,7 @@ const loggerPrep = {
 
 const events = {
   emit: (msg) => {
-    console.log('Info', msg)
+    // console.log('Info', msg)
   }
 }
 
