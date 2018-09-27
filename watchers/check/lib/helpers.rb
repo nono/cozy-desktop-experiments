@@ -7,8 +7,9 @@ module Helpers
     attr_reader :dir
 
     def cleanup
-      FileUtils.rm_r "#{@dir}/system-tmp-cozy-drive"
-      FileUtils.rm_r "#{@dir}/workspace"
+      ["#{@dir}/system-tmp-cozy-drive", "#{@dir}/workspace"].each do |d|
+        FileUtils.rm_r d if File.exist? d
+      end
     end
   end
 end
