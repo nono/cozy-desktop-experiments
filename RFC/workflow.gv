@@ -1,0 +1,34 @@
+digraph desktop {
+	graph [rankdir="LR", splines=true]
+	node [fontname="Fira Code", color="#297EF2", fontcolor="#32363F", shape="box", style="bold,rounded", margin=0.3]
+	edge [color="#32363F", style="bold"]
+	ranksep = 1.5
+	nodesep = 0.5
+
+	q [label="Backlog", shape="cylinder"]
+	hist [label="History database", shape="cylinder"]
+	ldb [label="Local database", shape="cylinder"]
+	rdb [label="Remote database", shape="cylinder"]
+
+	sync [label="Sync"]
+
+	cozy [label="Cozy instance"]
+	rwa [label="Remote watcher"]
+	rwo [label="Remote worker"]
+
+	hdd [label="Hard drive"]
+	lwa [label="Local watcher"]
+	lwo [label="Local worker"]
+
+	sync -> q [dir="back"]
+	sync -> hist
+
+	cozy -> rwa -> rdb -> q
+	hdd -> lwa -> ldb -> q
+
+	sync -> rdb
+	sync -> ldb
+
+	cozy -> rwo -> sync [dir="back"]
+	hdd -> lwo -> sync [dir="back"]
+}
