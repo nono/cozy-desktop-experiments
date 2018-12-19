@@ -15,6 +15,7 @@ directory but not this one"). This document explain how I will do it if I could
 start again. I hope it will be useful someday, and in the mean time, comments
 about it are welcomed.
 
+
 ## Limits of the current model
 
 The design of the actual version of cozy-desktop is explained on
@@ -48,3 +49,47 @@ the database. Conflicts are complicated to serialize in the database, but not
 doing so is worse: they don't follow the logical flow, duplicate some code, and
 introduce a lot of subtle bugs.
 
+
+## New version
+
+![Workflow](workflow.png)
+
+### Remote
+
+### Local
+
+### Backlog
+
+By backlog, I mean the list of files and folders that will need to be
+synchronized (or at least to check in case of doubt). In the current version of
+cozy-desktop, the backlog is implicit: we keep a sequence number and take the
+first document from the pouchdb changes feed after this sequence number. It works
+fine, but it has some limitations. We can't query the changes feed or reorder
+documents inside it (except by writing to a document that automatically moves
+it to the end).
+
+In the new version, I think we should move the backlog to a dedicated database
+(or table/keyspace/whatever). We can query the database, and can choose to
+synchronize new files before deleting old ones. As an optimization, we can add
+QoS by transfering first the small files (< 100 ko), then the medium ones, and
+keeps the large ones (> 10Mo) for inactive periods. And, if we want to go
+further, we can query a batch of small files and download them in [a single
+request as a zip](https://docs.cozy.io/en/cozy-stack/files/#post-filesarchive).
+
+It's also possible to say that, when an error happened, to not retry to
+synchronize a file/directory before some amount of time (with an exponential
+backoff rule for example).
+
+I don't have a precise list of things to put in the backlog, but we can start
+with these properties for each job:
+- `side`: `local` or `remote` to say what side has added the job
+- `id`: the inode/fileid for `local`, or the uuid if `remote`
+- `kind`: `file` or `directory`
+- `size`: for files only
+- `errors`: the number of errors for synchronzing this file (most often 0)
+- `not_before`: we should not try to synchronize the file before this date
+  (after an error).
+
+### History
+
+### Sync
