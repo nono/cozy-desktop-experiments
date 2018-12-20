@@ -56,6 +56,21 @@ introduce a lot of subtle bugs.
 
 ### Remote
 
+This part is easy: we use the changes feed from CouchDB to put the files
+documents in a local database. In this local database, we keep the relevant
+data about the directories and files: id and rev, type, name, dir_id,
+updated_at, trashed, md5sum, size, executable and tags. But more important, we
+don't keep the fullpath (except maybe for debugging purpose).
+
+To know when to pull the documents from the changes feed, we should use the
+realtime endpoint from the stack (websocket) to know when there is activity.
+With a debouce of 2 seconds, we can be really reactive to the changes made on
+the cozy (when online).
+
+This new version is a lot easier than the current one (no need to analyze the
+changes feed to regroup the files and directories moved at the same time), even
+if we still have to be careful about the transitions between online and offline.
+
 ### Local
 
 ### Backlog
