@@ -57,8 +57,8 @@ introduce a lot of subtle bugs.
 ### Remote
 
 This part is easy: we use the changes feed from CouchDB to put the files
-documents in a local database. In this local database, we keep the relevant
-data about the directories and files: id and rev, type, name, dir_id,
+documents in a pouchdb/sqlite/whatever database. In this database, we keep the
+relevant data about the directories and files: id and rev, type, name, dir_id,
 updated_at, trashed, md5sum, size, executable and tags. But more important, we
 don't keep the fullpath (except maybe for debugging purpose).
 
@@ -108,3 +108,49 @@ with these properties for each job:
 ### History
 
 ### Sync
+
+
+## Technologies
+
+This document is mainly focused on a design, how to manage the flow of events
+and converge to a stable state. Technologies are not that important for that.
+But choosing the right technologies can help to build that faster and with less
+bugs. So let's talk a bit about that:
+
+- The language: JavaScript is a terrible language, and even with flow, it's way
+  too easy to miss some typos that should be easy to catch bugs. There are hard
+  things in cozy-desktop, and it will come with some long sessions of
+  debugging, but at least we should avoid that for the bugs that a tool can
+  catch (compiler, linter, vet, etc.). We should choose a language that will
+  help us to avoid bugs, and JavaScript is not this language (maybe TypeScript
+  if we want to keep node and electron, but I haven't written anything
+  significant with it, so don't take this as an endorsement).
+
+- The database: PouchDB was not a bad choice, but on the long run, I will
+  prefer sqlite. For example, having transactions when writing several documents
+  at once after a directory was moved looks more safe. An embedded key/value
+  store could also do the job. But I don't feel like we need great performances
+  from the database, so the main criterion will be reliability and the ease of
+  use (to avoid bugs in misuse). And there, it will be hard to beat sqlite.
+
+- The tests: they are crucial, as the experience have teached us. Mocha is
+  mostly fine and have some nice features, but it makes really hard to
+  parallelize tests, and I think it's a MUST for testing cozy-desktop. It
+  probably means that even if cozy-desktop stays in JS (or something that
+  transpiles to it), we should move to another test runner. And I will split
+  the tests in 3 categories:
+
+  * unit tests: no cozy-stack, no inotify/FsEvents/RDCW, these tests should be
+    run very often by the developers, and it shouldn't take more than a couple
+    of seconds to run the whole suite.
+  * integration tests: here, we test the boundaries of our code, how the client
+    interacts with cozy-stack, with the file system, or with
+    inotify/FsEvents/RDCW.
+  * global tests: we test the behavior of the client against complex scenarios.
+    Fuzzing, property based testing, or just some hand-written scenarios, it
+    doesn't matter as long as we are testing a lot of configurations. The goal
+    is to have some tools for finding new bugs before the users. But when some
+    inputs make the cozy-desktop bugs, it's nice to have a way to keep this
+    scenario in the git repository to avoid future regressions.
+
+And that's all!
