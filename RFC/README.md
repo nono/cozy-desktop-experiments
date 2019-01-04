@@ -73,6 +73,42 @@ if we still have to be careful about the transitions between online and offline.
 
 ### Local
 
+The local watcher is probably the part that I've spent the most time, and I
+still haven't figured how do it in a reliable way. Well, there is the fuse way
+where we intercept the syscalls for the files and directories inside the
+synchronized path, but it doesn't look like we can do something user friendly
+on the 3 platforms (windows, macOS and GNU/Linux, but mainly windows). So let's
+forget that. What we want is to have in a database the list of files and
+directories, with some fields for each of them. Most of these fields can be
+filled with stat(2), with the exception of checksum (a md5sum currently, but it
+may be a sha256sum one day).
+
+#### The identifier
+
+The first issue is the identifier to use for this database: the primary key
+that will really identify a file or folder, and be used as a foreign key in
+other databases. The first obvious candidate is the path. It was my first
+choice, in a variant where the path was upper-cased for case-insensitive file
+systems. It means that when a folder moves, we have a lot of documents to
+update. It can introduce some bugs, for example, if a file in a moved directory
+is also updated in the same short period of time. But the more important con
+for me is that the same identifier (path) can be used for 2 distinct file or
+directory: not at the same time, but one after the other, and if we have a
+foreign key from another database, it's really tricky if we can differentiate
+if it is the same file or not.
+
+Another candidate is the fileID (windows) or inode number (macOS, GNU/Linux).
+It doesn't have the first con (when we move a folder, the identifiers for all
+the documents remain the same, we just need to update one document), but it has
+the second (the inode numbers can be reused after being freed).
+
+Using an identifier composed from the fileID/inode and a generation has crossed
+my mind, but I think that using auto-incremented IDs can work and may be
+simpler. We should still have the fileID / inode number in a field (with a
+unique index it it's available).
+
+#### Startup
+
 ### Backlog
 
 By backlog, I mean the list of files and folders that will need to be
