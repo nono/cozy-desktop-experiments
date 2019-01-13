@@ -41,13 +41,20 @@ that having more databases is better: it helps to split the problem in several
 sub-problems that are easier to manage. Notably, it's a lot harder to use
 inotify, fsevents and ReadDirectoryChangesW that I imagined, and having a
 database with local files help to put apart the issues of knowing what happen
-on the local file system.
+on the local file system. In particular, when I started cozy-dekstop, I hoped
+that a library like chokidar can help to mask the differences between the three
+FS watching technologies (even if I anticipated that chokidar will have bugs,
+and that we would need to contribute to it). Now, I understand that for
+cozy-desktop, it's a mistake to hide the low-levels details of the FS watchers,
+and the differences are too important to have a single libray with the same
+behavior for the three.
 
 There are also some things that could have been managed better. In particular,
 I think it was a mistake to try to resolve conflicts without writing before in
 the database. Conflicts are complicated to serialize in the database, but not
 doing so is worse: they don't follow the logical flow, duplicate some code, and
 introduce a lot of subtle bugs.
+
 
 ## Things to keep
 
