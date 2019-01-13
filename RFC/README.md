@@ -139,6 +139,10 @@ unique index it it's available).
 
 #### Startup
 
+#### FS Watcher
+
+#### Move detection
+
 ### Backlog
 
 By backlog, I mean the list of files and folders that will need to be
@@ -164,7 +168,7 @@ backoff rule for example).
 I don't have a precise list of things to put in the backlog, but we can start
 with these properties for each job:
 - `side`: `local` or `remote` to say what side has added the job
-- `id`: the inode/fileid for `local`, or the uuid if `remote`
+- `id`: the auto-incremented ids for `local`, or the uuid if `remote`
 - `kind`: `file` or `directory`
 - `size`: for files only
 - `errors`: the number of errors for synchronzing this file (most often 0)
@@ -172,6 +176,19 @@ with these properties for each job:
   (after an error).
 
 ### History
+
+The history database is where we keep information about files and directories
+the last time they wre synchronized.
+- `local_id`: the identifier of this file in the local database
+- `remote_id`: the UUID of this file in the remote database
+- `kind`: `file` or `directory`
+- `path`: the path of this file or directory
+- `size` and `md5sum`: for files only.
+
+As you can see, some fields are missing, like `executable`. Maybe I'm wrong,
+but I don't think it is useful to keep them here, as they are not used to know
+what actions should be done on a file, only how to perform these actions (and
+we will use the local or remote document at this stage).
 
 ### Sync
 
