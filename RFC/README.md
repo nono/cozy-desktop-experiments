@@ -8,12 +8,14 @@ laptop and/or desktop computer. It replicates your files on your hard drive and
 applies the changes you make to them on other synchronized devices and on [your
 online Cozy](https://github.com/cozy/cozy-stack).
 
-The current version of code kinds of work, but it has accumulated lot of
-technical debt, and it will be very hard to go to the next level of reliability
-and to feature like selective synchronization (aka "I want to synchronize this
-directory but not this one"). This document explain how I will do it if I could
-start again. I hope it will be useful someday, and in the mean time, comments
-about it are welcomed.
+The current version of code kinds of work, but it has accumulated lot of edge
+cases, and specific stuff, and some technical debt, etc. It is really hard to
+understand to understand the high-level flow, and how one small change can
+impact the global behavior. Thus, it will take very long to go to the next
+level of reliability and to add features like selective synchronization (aka "I
+want to synchronize this directory but not this one"). This document explain
+how I will do it if I could start again. I hope it will be useful someday, and
+in the mean time, comments about it are welcomed.
 
 
 ## Limits of the current model
