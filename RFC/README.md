@@ -49,6 +49,27 @@ the database. Conflicts are complicated to serialize in the database, but not
 doing so is worse: they don't follow the logical flow, duplicate some code, and
 introduce a lot of subtle bugs.
 
+## Things to keep
+
+### Retry strategy
+
+One thing that has helped a lot in the current cozy-desktop is its retry
+strategy. Instead of aiming for a perfect synchronization strategy where each
+operation succeed at its first try, we have accepted that we will have some
+intermitent errors and that we should retry synchronization after a failure.
+The details, like we retry up to 10 times, with a back-off function to space
+out the retry in time, are not as important as the fact that retry is crucial
+for cozy-desktop work.
+
+### Staging area
+
+When a file is downloaded by cozy-desktop from the Cozy, it is not written
+directly in the synchronized directory. It is first put in a temporary
+directory, and only moved to the synchronized directory when it is ready. It
+helps to pollute the synchronized directory when the download fails, and to
+avoid confusion by limiting the events for this file that the local watcher
+will see.
+
 
 ## New version
 
