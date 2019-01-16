@@ -149,7 +149,20 @@ the records. But, it's not the case, and it can introduce subtle bugs in the
 detection of the files that were deleted while the client was not running.
 That's why I suggests to use another database during the startup.
 
-#### FS Watcher
+#### FS Watchers
+
+I'm convinced that, for cozy-desktop, it's better to be near the FS watchers,
+inotify, FsEvents, and ReadDirectoryChangesW, and avoid high level library like
+chokidar. And we can't have exactly the same code for the 3 platforms.
+
+When we start playing with the FS watchers, it's tempting to think that the
+events will give us all the information we need. With the time, we see it's not
+the case, and we have to use `stat(2)` and other tricks to "fix" the events.
+I've read on Internet someone that advices to just take the path of each event
+and discard everything else, and then rebuild the information from the file
+system. For cozy-desktop, I think the good way is a middle ground between these
+2 extremes, and it's not the same for all the OSes. On macOS, the batching of
+the events make them less useful than on windows and Linux.
 
 #### Move detection
 
@@ -165,6 +178,15 @@ But, the FS watcher is only available when the client is running. If the file
 or directory is moved when the client was stopped, we still have to detect the
 move. On Linux, the inode numbers can be reused very fast, so it's not a good
 idea to rely on it.
+
+#### Recipe
+
+I know, I didn't describe how the local watcher should work, only gave some
+general directions. In fact, I don't see how the local watcher should work for
+macOS. On Linux and windows, the work with atom/watcher and the buffers/steps
+is a solid start. We should use sooner the information from the local database,
+as it would be now easier to do that. For macOS, maybe we should develop several
+prototypes and see which one works the best.
 
 ### Backlog
 
