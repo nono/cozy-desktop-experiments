@@ -139,9 +139,31 @@ unique index it it's available).
 
 #### Startup
 
+I think the more reliable way to have up to date information about the file in
+local when the client is started is to create another database, to fill it, and
+when we are done, replace the old database with the new one. If all the files
+and directories were frozen when the client starts and scans the files to see
+if they have changed since the last time, it would be simpler to just update
+the records. But, it's not the case, and it can introduce subtle bugs in the
+detection of the files that were deleted while the client was not running.
+That's why I suggests to use another database during the startup.
+
 #### FS Watcher
 
 #### Move detection
+
+When a file or directory is moved, we need to keep track that it is the same
+file, in order to use the same identifier.
+
+For macOS and windows, the FS watcher doesn't tell us that a file or directory
+is moved: we have to infer it from two events with the same inode number or
+fileID (the deletion at the old path and the create at the new path). For
+Linux, inotify had a cookie to these events, so it's a bit easier.
+
+But, the FS watcher is only available when the client is running. If the file
+or directory is moved when the client was stopped, we still have to detect the
+move. On Linux, the inode numbers can be reused very fast, so it's not a good
+idea to rely on it.
 
 ### Backlog
 
