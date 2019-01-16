@@ -22,11 +22,11 @@ in the mean time, comments about it are welcomed.
 
 The design of the actual version of cozy-desktop is explained on
 https://cozy-labs.github.io/cozy-desktop/doc/developer/design.html.
-It was written for Cozy v2, several years ago, with some asumptions that are no
-longer relevant. In particular, I made the tradeoff to accept that a move on
-the local file system can be sometimes detected and handled as if the file was
-deleted and recreated. This is not acceptable for Cozy v3, where a file on the
-cozy instance can have references.
+It was written for Cozy v2, several years ago, with some assumptions that are
+no longer relevant. In particular, I made the trade-off to accept that a move
+on the local file system can be sometimes detected and handled as if the file
+was deleted and recreated. This is not acceptable for Cozy v3, where a file on
+the cozy instance can have references.
 
 I also have more experience on the subject, like knowing the tricks and traps
 of inotify, fsevents and ReadDirectoryChangesW. And even if the core
@@ -38,17 +38,17 @@ recently.
 But let's talk about the real flaws of the actual design. First and foremost,
 it was always obvious to me that having two databases, one for local files and
 one for remote files couldn't work and I choose to take a single database
-approach with eventual consistency, inspired by CouchDB and PouchDB. I now realize
-that having more databases is better: it helps to split the problem in several
-sub-problems that are easier to manage. Notably, it's a lot harder to use
-inotify, fsevents and ReadDirectoryChangesW that I imagined, and having a
+approach with eventual consistency, inspired by CouchDB and PouchDB. I now
+realize that having more databases is better: it helps to split the problem in
+several sub-problems that are easier to manage. Notably, it's a lot harder to
+use inotify, fsevents and ReadDirectoryChangesW that I imagined, and having a
 database with local files help to put apart the issues of knowing what happen
 on the local file system. In particular, when I started cozy-dekstop, I hoped
 that a library like chokidar can help to mask the differences between the three
 FS watching technologies (even if I anticipated that chokidar will have bugs,
 and that we would need to contribute to it). Now, I understand that for
 cozy-desktop, it's a mistake to hide the low-levels details of the FS watchers,
-and the differences are too important to have a single libray with the same
+and the differences are too important to have a single library with the same
 behavior for the three.
 
 There are also some things that could have been managed better. In particular,
@@ -65,7 +65,7 @@ introduce a lot of subtle bugs.
 One thing that has helped a lot in the current cozy-desktop is its retry
 strategy. Instead of aiming for a perfect synchronization strategy where each
 operation succeed at its first try, we have accepted that we will have some
-intermitent errors and that we should retry synchronization after a failure.
+intermittent errors and that we should retry synchronization after a failure.
 The details, like we retry up to 10 times, with a back-off function to space
 out the retry in time, are not as important as the fact that retry is crucial
 for cozy-desktop work.
@@ -94,12 +94,13 @@ don't keep the fullpath (except maybe for debugging purpose).
 
 To know when to pull the documents from the changes feed, we should use the
 realtime endpoint from the stack (websocket) to know when there is activity.
-With a debouce of 2 seconds, we can be really reactive to the changes made on
+With a debounce of 2 seconds, we can be really reactive to the changes made on
 the cozy (when online).
 
 This new version is a lot easier than the current one (no need to analyze the
 changes feed to regroup the files and directories moved at the same time), even
-if we still have to be careful about the transitions between online and offline.
+if we still have to be careful about the transitions between online and
+offline.
 
 ### Local
 
@@ -170,10 +171,10 @@ idea to rely on it.
 By backlog, I mean the list of files and folders that will need to be
 synchronized (or at least to check in case of doubt). In the current version of
 cozy-desktop, the backlog is implicit: we keep a sequence number and take the
-first document from the pouchdb changes feed after this sequence number. It works
-fine, but it has some limitations. We can't query the changes feed or reorder
-documents inside it (except by writing to a document that automatically moves
-it to the end).
+first document from the pouchdb changes feed after this sequence number. It
+works fine, but it has some limitations. We can't query the changes feed or
+reorder documents inside it (except by writing to a document that automatically
+moves it to the end).
 
 In the new version, I think we should move the backlog to a dedicated database
 (or table/keyspace/whatever). We can query the database, and can choose to
@@ -185,7 +186,7 @@ request as a zip](https://docs.cozy.io/en/cozy-stack/files/#post-filesarchive).
 
 It's also possible to say that, when an error happened, to not retry to
 synchronize a file/directory before some amount of time (with an exponential
-backoff rule for example).
+back-off rule for example).
 
 I don't have a precise list of things to put in the backlog, but we can start
 with these properties for each job:
@@ -193,14 +194,14 @@ with these properties for each job:
 - `id`: the auto-incremented ids for `local`, or the uuid if `remote`
 - `kind`: `file` or `directory`
 - `size`: for files only
-- `errors`: the number of errors for synchronzing this file (most often 0)
+- `errors`: the number of errors for synchronizing this file (most often 0)
 - `not_before`: we should not try to synchronize the file before this date
   (after an error).
 
 ### History
 
 The history database is where we keep information about files and directories
-the last time they wre synchronized.
+the last time they were synchronized.
 - `local_id`: the identifier of this file in the local database
 - `remote_id`: the UUID of this file in the remote database
 - `kind`: `file` or `directory`
@@ -232,13 +233,14 @@ bugs. So let's talk a bit about that:
   significant with it, so don't take this as an endorsement).
 
 - The database: PouchDB was not a bad choice, but on the long run, I will
-  prefer sqlite. For example, having transactions when writing several documents
-  at once after a directory was moved looks more safe. An embedded key/value
-  store could also do the job. But I don't feel like we need great performances
-  from the database, so the main criterion will be reliability and the ease of
-  use (to avoid bugs in misuse). And there, it will be hard to beat sqlite.
+  prefer sqlite. For example, having transactions when writing several
+  documents at once after a directory was moved looks more safe. An embedded
+  key/value store could also do the job. But I don't feel like we need great
+  performances from the database, so the main criterion will be reliability and
+  the ease of use (to avoid bugs in misuse). And there, it will be hard to beat
+  sqlite.
 
-- The tests: they are crucial, as the experience have teached us. Mocha is
+- The tests: they are crucial, as the experience have taught us. Mocha is
   mostly fine and have some nice features, but it makes really hard to
   parallelize tests, and I think it's a MUST for testing cozy-desktop. It
   probably means that even if cozy-desktop stays in JS (or something that
@@ -252,7 +254,7 @@ bugs. So let's talk a bit about that:
     interacts with cozy-stack, with the file system, or with
     inotify/FsEvents/RDCW.
   * global tests: we test the behavior of the client against complex scenarios.
-    Fuzzing, property based testing, or just some hand-written scenarios, it
+    Fuzzing, property based testing, or just some hand written scenarios, it
     doesn't matter as long as we are testing a lot of configurations. The goal
     is to have some tools for finding new bugs before the users. But when some
     inputs make the cozy-desktop bugs, it's nice to have a way to keep this
