@@ -177,7 +177,9 @@ Linux, inotify had a cookie to these events, so it's a bit easier.
 But, the FS watcher is only available when the client is running. If the file
 or directory is moved when the client was stopped, we still have to detect the
 move. On Linux, the inode numbers can be reused very fast, so it's not a good
-idea to rely on it.
+idea to rely on it. One idea could be add an extended attributes (`xattr`) with
+the identifier from the file in the local database to the file on the FS, and
+use it to detect files renamed/moved while the client was stopped.
 
 #### Recipe
 
@@ -236,6 +238,17 @@ what actions should be done on a file, only how to perform these actions (and
 we will use the local or remote document at this stage).
 
 ### Sync
+
+And now, let's the magic happens!
+
+In sync, we take entries from the backlog, and for each of them, we use this:
+
+#### Advanced
+
+When this version works, we can add more advanced stuff on top of that:
+
+- we can regroups several jobs at once to be more efficient
+- we can do selective synchronization.
 
 
 ## Technologies
