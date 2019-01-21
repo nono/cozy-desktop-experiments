@@ -214,8 +214,9 @@ back-off rule for example).
 
 I don't have a precise list of things to put in the backlog, but we can start
 with these properties for each job:
+- `id`: an auto-incremented id that identify the job
 - `side`: `local` or `remote` to say what side has added the job
-- `id`: the auto-incremented ids for `local`, or the uuid if `remote`
+- `side_id`: the auto-incremented ids for `local`, or the uuid if `remote`
 - `kind`: `file` or `directory`
 - `size`: for files only
 - `errors`: the number of errors for synchronizing this file (most often 0)
@@ -241,9 +242,16 @@ we will use the local or remote document at this stage).
 
 And now, let's the magic happens!
 
-In sync, we take entries from the backlog, and for each of them, we use this:
+In sync, we take jobs from the backlog, and for each of them, we use this
+(here, it is a version where `side` is `local` and `kind` is `file`, but it's
+easy to infer the other versions from it):
+
+And, when done, we should not forget to remove the job from the backlog.
 
 #### Caveats
+
+I've ignored the complexity introduced by the case insensitivity of some file
+systems. We should figure it later, I'm not worried by that.
 
 We need to know the local and remote identifiers of a file when we insert a
 record for it in the history database. For remote, we can expect the get it
