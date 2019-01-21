@@ -243,6 +243,21 @@ And now, let's the magic happens!
 
 In sync, we take entries from the backlog, and for each of them, we use this:
 
+#### Caveats
+
+We need to know the local and remote identifiers of a file when we insert a
+record for it in the history database. For remote, we can expect the get it
+from the response of the cozy-stack, but in local, the inode or fileID is not
+enough. We may use the local database, but if we just read inside it, we have
+to wait that the event is fired by the TS watcher and handled by the local
+watcher: it's slow and can introduce some edge cases. Another possibility would
+be that Sync sends a fake event to the local watcher and got the identifier in
+response, but I'm not totally convinced too. Yet another option would be to put
+an incomplete record in the history database, and use the extended attributes
+of the local filesystem to put the identifier of the file from the history
+database in the extended attributes. It would allow to make the matching later.
+I'm not sure what this last option implies, and if it is really a good idea.
+
 #### Advanced
 
 When this version works, we can add more advanced stuff on top of that:
