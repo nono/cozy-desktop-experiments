@@ -1,4 +1,4 @@
-digraph desktop {
+digraph workflow {
 	graph [rankdir="LR", splines=true]
 	node [fontname="Fira Code", color="#297EF2", fontcolor="#32363F", shape="box", style="bold,rounded", margin=0.3]
 	edge [color="#32363F", style="bold"]

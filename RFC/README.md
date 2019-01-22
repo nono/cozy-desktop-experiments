@@ -248,6 +248,11 @@ easy to infer the other versions from it):
 
 And, when done, we should not forget to remove the job from the backlog.
 
+#### Conflict resolutions
+
+Note: a conflict on states can lead to a conflict on IDs if the resolution is
+to move or recreate a file at a path used by another file.
+
 #### Caveats
 
 I've ignored the complexity introduced by the case insensitivity of some file
@@ -265,6 +270,8 @@ an incomplete record in the history database, and use the extended attributes
 of the local filesystem to put the identifier of the file from the history
 database in the extended attributes. It would allow to make the matching later.
 I'm not sure what this last option implies, and if it is really a good idea.
+Maybe we should even go further and remove the `local_id` from the history db
+and add a `history_id` in the local db (+ in the backlog).
 
 #### Advanced
 

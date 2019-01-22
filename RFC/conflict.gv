@@ -1,0 +1,19 @@
+digraph conflict {
+	node [fontname="Fira Code", color="#297EF2", fontcolor="#32363F", shape="box", style="bold,rounded", margin=0.3]
+	edge [fontname="Fira Code", color="#32363F", fontcolor="#32363F", style="bold"]
+	ranksep = 1.5
+	nodesep = 0.5
+
+	start [label="Conflict of states", color="#FC4C83", fillcolor="#FFF2F2", style="filled,bold,rounded"]
+	ask_deletion [label="Was the file deleted\non one side?"]
+	deleted [label="Compare the md5sum\non the other side\nand in history"]
+	not_deleted [label="TODO"]
+	act_delete [label="Delete the file\non the other side", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_recreate [label="Recreate the file\non the first side", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+
+	start -> ask_deletion
+	ask_deletion -> deleted [label="yes"]
+	ask_deletion -> not_deleted [label="no"]
+	deleted -> act_delete [label="same"]
+	deleted -> act_recreate [label="different"]
+}
