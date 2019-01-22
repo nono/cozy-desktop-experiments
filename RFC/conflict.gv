@@ -5,15 +5,42 @@ digraph conflict {
 	nodesep = 0.5
 
 	start [label="Conflict of states", color="#FC4C83", fillcolor="#FFF2F2", style="filled,bold,rounded"]
-	ask_deletion [label="Was the file deleted\non one side?"]
-	deleted [label="Compare the md5sum\non the other side\nand in history"]
-	not_deleted [label="TODO"]
-	act_delete [label="Delete the file\non the other side", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
-	act_recreate [label="Recreate the file\non the first side", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
-
 	start -> ask_deletion
+
+	ask_deletion [label="Was the file deleted\non one side?"]
 	ask_deletion -> deleted [label="yes"]
 	ask_deletion -> not_deleted [label="no"]
-	deleted -> act_delete [label="same"]
-	deleted -> act_recreate [label="different"]
+
+	deleted [label="Compare the md5sum\non the other side\nand in history"]
+	deleted -> act_delete [label="=="]
+	deleted -> act_recreate [label="!="]
+
+	not_deleted [label="Compare the md5sum\non the two sides"]
+	not_deleted -> same_sum [label="=="]
+	not_deleted -> changed_sum [label="!="]
+
+	same_sum [label="Take the same md5sum\nas the target"]
+	same_sum -> ask_meta
+
+	changed_sum [label="Does the md5sum\non one side the same\nas the one in history?"]
+	changed_sum -> updated_sum [label="yes"]
+	changed_sum -> act_dissociate [label="no"]
+
+	updated_sum [label="Take the md5sum\nof the other side\nas the target"]
+	updated_sum -> ask_meta
+
+	ask_meta [label="Compare the metadata\n(path, updated_at...)\non the two sides"]
+	ask_meta -> same_meta [label="=="]
+	ask_meta -> changed_meta [label="!="]
+
+	same_meta [label="Take the same metadata\nas the target"]
+	same_meta -> act_apply
+
+	changed_meta [label="Take the metadate\nwith the latter\nupdated_at"]
+	changed_meta -> act_apply
+
+	act_dissociate [label="Dissociate\nthe two files", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_delete [label="Delete the file\non the other side", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_recreate [label="Recreate the file\non the first side", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_apply [label="Apply the target", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
 }

@@ -250,6 +250,13 @@ And, when done, we should not forget to remove the job from the backlog.
 
 #### Conflict resolutions
 
+The resolution of a conflict of states can be done with those steps:
+
+![Conflict](conflict.png)
+
+For a conflict of IDs, I think we can start with what we have in the current
+cozy-dekstop, and see later if we can improve it.
+
 Note: a conflict on states can lead to a conflict on IDs if the resolution is
 to move or recreate a file at a path used by another file.
 
