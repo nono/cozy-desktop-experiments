@@ -1,0 +1,55 @@
+digraph sync {
+	node [fontname="Fira Code", color="#297EF2", fontcolor="#32363F", shape="box", style="bold,rounded", margin=0.3]
+	edge [fontname="Fira Code", color="#32363F", fontcolor="#32363F", style="bold"]
+	ranksep = 1.5
+	nodesep = 0.5
+
+	start [label="Fetch the file record\nin the local database"]
+	start -> local_missing [label="missing"]
+	start -> local_exists [label="exists"]
+
+	local_missing [label="Fetch the file record\nin the history database"]
+	local_missing -> act_nothing [label="missing"]
+	local_missing -> file_removed [label="exists"]
+
+	file_removed [label="Fetch the file record\nin the remote database"]
+	file_removed -> act_rm_hist [label="missing"]
+	file_removed -> file_removed_b [label="exists"]
+
+	file_removed_b [label="Compare the md5sum\nbetween the history record\nand the remote record"]
+	file_removed_b -> act_remove [label="=="]
+	file_removed_b -> conflict_states [label="!="]
+
+	local_exists [label="Fetch the file record\nin the history database"]
+	local_exists -> file_added [label="missing"]
+	local_exists -> file_updated [label="exists"]
+
+	file_added [label="Does a file exists\nfor the same path\non the remote?"]
+	file_added -> act_add_file [label="no"]
+	file_added -> conflict_ids [label="yes"]
+
+	file_updated [label="Compare the file\nbetween local\nand history"]
+	file_updated -> act_nothing [label="=="]
+	file_updated -> fetch_remote [label="!="]
+
+	fetch_remote [label="Fetch the file record\nin the remote database"]
+	fetch_remote -> conflict_states [label="missing"]
+	fetch_remote -> remote_fetched [label="exists"]
+
+	remote_fetched [label="Compare the file\nbetween remote\nand history"]
+	remote_fetched -> file_updated_b [label="=="]
+	remote_fetched -> conflict_states [label="!="]
+
+	file_updated_b [label="Does a file exists\nfor the new path\non the remote?"]
+	file_updated_b -> conflict_ids [label="yes"]
+	file_updated_b -> act_apply [label="no"]
+
+	act_nothing [label="Nothing to do", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_rm_hist [label="Remove\nthe history record", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_remove [label="Trash the file\non the remote\nand remove\nthe history record", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_add_file [label="Upload the file\non the Cozy\nand add a record\nin history", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+	act_apply [label="Apply the changes\non the Cozy\nand update\nthe history record", color="#40DE8E", fillcolor="#F2FAF5", style="filled,bold,rounded"]
+
+	conflict_ids [label="Conflict on IDs", color="#FC4C83", fillcolor="#FFF2F2", style="filled,bold,rounded"]
+	conflict_states [label="Conflict on states", color="#FC4C83", fillcolor="#FFF2F2", style="filled,bold,rounded"]
+}

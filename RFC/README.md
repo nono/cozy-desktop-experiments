@@ -246,6 +246,8 @@ In sync, we take jobs from the backlog, and for each of them, we use this
 (here, it is a version where `side` is `local` and `kind` is `file`, but it's
 easy to infer the other versions from it):
 
+![Sync](sync.png)
+
 And, when done, we should not forget to remove the job from the backlog.
 
 #### Conflict resolutions
