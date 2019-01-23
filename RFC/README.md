@@ -9,13 +9,13 @@ applies the changes you make to them on other synchronized devices and on [your
 online Cozy](https://github.com/cozy/cozy-stack).
 
 The current version of code kinds of work, but it has accumulated lot of edge
-cases, and specific stuff, and some technical debt, etc. It is really hard to
-understand to understand the high-level flow, and how one small change can
-impact the global behavior. Thus, it will take very long to go to the next
-level of reliability and to add features like selective synchronization (aka "I
-want to synchronize this directory but not this one"). This document explain
-how I will do it if I could start again. I hope it will be useful someday, and
-in the mean time, comments about it are welcomed.
+cases, specific stuff, and some technical debt, etc. It is really hard to
+understand the high-level flow, and how one small change can impact the global
+behavior. Thus, it will take very long to go to the next level of reliability
+and to add features like selective synchronization (aka "I want to synchronize
+this directory but not this one"). This document explain how I will do it if I
+could start again. I hope it will be useful someday, and in the mean time,
+comments about it are welcomed.
 
 
 ## Limits of the current model
@@ -40,16 +40,17 @@ it was always obvious to me that having two databases, one for local files and
 one for remote files couldn't work and I choose to take a single database
 approach with eventual consistency, inspired by CouchDB and PouchDB. I now
 realize that having more databases is better: it helps to split the problem in
-several sub-problems that are easier to manage. Notably, it's a lot harder to
-use inotify, fsevents and ReadDirectoryChangesW that I imagined, and having a
-database with local files help to put apart the issues of knowing what happen
-on the local file system. In particular, when I started cozy-dekstop, I hoped
-that a library like chokidar can help to mask the differences between the three
-FS watching technologies (even if I anticipated that chokidar will have bugs,
-and that we would need to contribute to it). Now, I understand that for
-cozy-desktop, it's a mistake to hide the low-levels details of the FS watchers,
-and the differences are too important to have a single library with the same
-behavior for the three.
+several sub-problems that are easier to manage.
+
+Notably, it's a lot harder to use inotify, fsevents and ReadDirectoryChangesW
+that I imagined, and having a database with local files help to put apart the
+issues of knowing what happen on the local file system. In particular, when I
+started cozy-dekstop, I hoped that a library like chokidar can help to mask the
+differences between the three FS watching technologies (even if I anticipated
+that chokidar will have bugs, and that we would need to contribute to it). Now,
+I understand that for cozy-desktop, it's a mistake to hide the low-levels
+details of the FS watchers (it's our core business), and the differences are
+too important to have a single library with the same behavior for the three.
 
 There are also some things that could have been managed better. In particular,
 I think it was a mistake to try to resolve conflicts without writing before in
@@ -75,12 +76,16 @@ for cozy-desktop work.
 When a file is downloaded by cozy-desktop from the Cozy, it is not written
 directly in the synchronized directory. It is first put in a temporary
 directory, and only moved to the synchronized directory when it is ready. It
-helps to pollute the synchronized directory when the download fails, and to
+helps to not pollute the synchronized directory when the download fails, and to
 avoid confusion by limiting the events for this file that the local watcher
 will see.
 
 
 ## New version
+
+The global workflow is not very different, just some more databases. But don't
+be fooled: it's not because the names are the same that the underlying
+algorithms and structures will be used.
 
 ![Workflow](workflow.png)
 
@@ -102,17 +107,28 @@ changes feed to regroup the files and directories moved at the same time), even
 if we still have to be careful about the transitions between online and
 offline.
 
+#### Optimization
+
+For the first replication, we can avoid tombstones with those 4 steps:
+
+1. Fetch a sequence number (`last_seq`) from the changes feed
+   (`GET /data/io.cozy.files/_changes?since=now&limit=1`)
+2. Get all the file records
+   (`GET /data/io.cozy.files/_all_docs`)
+3. Insert the records in the remote database (pouch/sqlite/whatever)
+4. Start a first replication from the sequence number of the first step.
+
 ### Local
 
 The local watcher is probably the part that I've spent the most time, and I
 still haven't figured how do it in a reliable way. Well, there is the fuse way
-where we intercept the syscalls for the files and directories inside the
-synchronized path, but it doesn't look like we can do something user friendly
-on the 3 platforms (windows, macOS and GNU/Linux, but mainly windows). So let's
-forget that. What we want is to have in a database the list of files and
-directories, with some fields for each of them. Most of these fields can be
-filled with stat(2), with the exception of checksum (a md5sum currently, but it
-may be a sha256sum one day).
+(mouting a partition with fuse) where we intercept the syscalls for the files
+and directories inside the synchronized path, but it doesn't look like we can
+do something user friendly on the 3 platforms (windows, macOS and GNU/Linux,
+but mainly windows). So let's forget that. What we want is to have in a
+database the list of files and directories, with some fields for each of them.
+Most of these fields can be filled with stat(2), with the exception of checksum
+(a md5sum currently, but it may be a sha256sum or something else one day).
 
 #### The identifier
 
@@ -136,7 +152,7 @@ the second (the inode numbers can be reused after being freed).
 Using an identifier composed from the fileID/inode and a generation has crossed
 my mind, but I think that using auto-incremented IDs can work and may be
 simpler. We should still have the fileID / inode number in a field (with a
-unique index it it's available).
+unique index if it's available).
 
 #### Startup
 
@@ -203,7 +219,7 @@ moves it to the end).
 In the new version, I think we should move the backlog to a dedicated database
 (or table/keyspace/whatever). We can query the database, and can choose to
 synchronize new files before deleting old ones. As an optimization, we can add
-QoS by transfering first the small files (< 100 ko), then the medium ones, and
+QoS by transferring first the small files (< 100 ko), then the medium ones, and
 keeps the large ones (> 10Mo) for inactive periods. And, if we want to go
 further, we can query a batch of small files and download them in [a single
 request as a zip](https://docs.cozy.io/en/cozy-stack/files/#post-filesarchive).
@@ -216,7 +232,7 @@ I don't have a precise list of things to put in the backlog, but we can start
 with these properties for each job:
 - `id`: an auto-incremented id that identify the job
 - `side`: `local` or `remote` to say what side has added the job
-- `side_id`: the auto-incremented ids for `local`, or the uuid if `remote`
+- `side_id`: the auto-incremented ids for `local`, or the UUID if `remote`
 - `kind`: `file` or `directory`
 - `size`: for files only
 - `errors`: the number of errors for synchronizing this file (most often 0)
@@ -276,11 +292,11 @@ watcher: it's slow and can introduce some edge cases. Another possibility would
 be that Sync sends a fake event to the local watcher and got the identifier in
 response, but I'm not totally convinced too. Yet another option would be to put
 an incomplete record in the history database, and use the extended attributes
-of the local filesystem to put the identifier of the file from the history
+of the local file system to put the identifier of the file from the history
 database in the extended attributes. It would allow to make the matching later.
 I'm not sure what this last option implies, and if it is really a good idea.
-Maybe we should even go further and remove the `local_id` from the history db
-and add a `history_id` in the local db (+ in the backlog).
+Maybe we should even go further and remove the `local_id` from the history
+database and add a `history_id` in the local database (+ in the backlog).
 
 #### Advanced
 
