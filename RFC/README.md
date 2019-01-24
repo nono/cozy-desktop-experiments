@@ -348,6 +348,8 @@ bugs. So let's talk a bit about that:
     doesn't matter as long as we are testing a lot of configurations. The goal
     is to have some tools for finding new bugs before the users. But when some
     inputs make the cozy-desktop bugs, it's nice to have a way to keep this
-    scenario in the git repository to avoid future regressions.
+    scenario in the git repository to avoid future regressions. And it's a good
+    idea to enforce some invariants in the code, as it is a good complementary
+    to such tests.
 
 And that's all!
