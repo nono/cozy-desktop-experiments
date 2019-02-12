@@ -197,6 +197,15 @@ idea to rely on it. One idea could be add an extended attributes (`xattr`) with
 the identifier from the file in the local database to the file on the FS, and
 use it to detect files renamed/moved while the client was stopped.
 
+#### Caveat
+
+Some softwares are not updating files in place, but write the new version in a
+temporay file and then replace the old version by the temporary file (it is
+done to ensure the atomicity). Cozy-desktop should be able to detect those
+cases, and associate the two versions as the same file. It is important, for
+example, if the file is shared to ensure that the recipients will have the new
+versions.
+
 #### Recipe
 
 I know, I didn't describe how the local watcher should work, only gave some
