@@ -30,3 +30,9 @@ users:
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/remote/warning_poller.js
 - sentry
 - etc.
+
+## License
+
+The code is licensed as GNU AGPLv3. See the LICENSE file for the full license.
+
+♡2019 by Bruno Michel. Copying is an act of love. Please copy and share.
