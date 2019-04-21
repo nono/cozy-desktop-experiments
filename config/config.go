@@ -4,7 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"net/url"
 	"os"
+
+	"github.com/cozy/cozy-stack/client"
+	"github.com/cozy/cozy-stack/client/auth"
+)
+
+const (
+	// UserAgent is used for the HTTP Header User-Agent to identify this
+	// software when making requests to the stack in logs.
+	UserAgent = "cozy-fuse-client"
 )
 
 var (
@@ -23,15 +33,11 @@ type Config struct {
 	// Instance is the URL of a cozy instance.
 	Instance string `json:"instance"`
 	// Client is the parameters of the OAuth client for this instance.
-	Client struct {
-		ClientID     string `json:"client_id"`
-		ClientSecret string `json:"client_secret"`
-	} `json:"client"`
+	OAuthClient auth.Client `json:"client"`
 	// Token is the bearer tokens for this OAuth client.
-	Token struct {
-		Access  string `json:"access_token"`
-		Refresh string `json:"refresh_token"`
-	} `json:"token"`
+	Token auth.AccessToken `json:"token"`
+
+	client *client.Client
 }
 
 // Load returns the config at the given path.
@@ -48,4 +54,24 @@ func Load(configPath string) (*Config, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+// Client returns a client for making requests to cozy-stack.
+// TODO manage properly the case where the config is not complete or is invalid
+func (c *Config) Client() *client.Client {
+	if c.client == nil {
+		u, err := url.Parse(c.Instance)
+		if err != nil {
+			panic(err)
+		}
+		c.client = &client.Client{
+			Addr:       u.Host,
+			Domain:     u.Host,
+			Scheme:     u.Scheme,
+			AuthClient: &c.OAuthClient,
+			Authorizer: &c.Token,
+			UserAgent:  UserAgent,
+		}
+	}
+	return c.client
 }

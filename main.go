@@ -1,15 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 
 	"bazil.org/fuse"
-	fspkg "bazil.org/fuse/fs"
 	"github.com/nono/cozy-fuse/config"
-	"github.com/nono/cozy-fuse/local"
+	"github.com/nono/cozy-fuse/sync"
 )
 
 func usage() {
@@ -40,38 +40,17 @@ func main() {
 		}
 	}
 
-	fmt.Printf("config = %#v\n", cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, os.Interrupt)
+		<-signalChan
+		cancel()
+	}()
 
 	fmt.Println("cozy-fuse: mounting")
-	options := []fuse.MountOption{
-		fuse.FSName("cozy-fuse"),
-		fuse.Subtype("cozy-fuse"),
-		fuse.ReadOnly(),
-	}
-	c, err := fuse.Mount(cfg.Mount, options...)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error on mount: %s\n", err)
-		os.Exit(1)
-	}
-	defer c.Close()
-	defer fuse.Unmount(cfg.Mount)
-
-	fs := &local.FS{}
-	err = fspkg.Serve(c, fs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error on serve: %s\n", err)
-		os.Exit(1)
-	}
-
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-
-	select {
-	case <-c.Ready:
-	case <-signalChan:
-	}
-	if err := c.MountError; err != nil {
-		fmt.Fprintf(os.Stderr, "Error on ready: %s\n", err)
+	if err := sync.Run(ctx, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		os.Exit(1)
 	}
 }
