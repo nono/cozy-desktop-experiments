@@ -29,7 +29,26 @@ users:
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/config/.cozyignore
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/remote/warning_poller.js
 - sentry
+- use the XDG user-directories for config & co
 - etc.
+
+## How-to test cozy-fuse in local
+
+```sh
+$ git clone github.com/nono/cozy-fuse.git
+$ cd cozy-fuse
+$ go build
+$ mkdir -p tmp/{data,mount}
+$ cp config.example.json tmp/config.json
+$ cozy-stack serve
+$ cozy-stack instances add cozy.tools:8080 --passphrase cozy --apps home,store,drive,settings --email foo@cozy.tools --public-name Foo
+$ cozy-stack instances client-oauth --json cozy.tools:8080 http://localhost:1234/ 'Cozy Fuse' github.com/nono/cozy-fuse
+$ cozy-stack instances token-oauth cozy.tools:8080 <client-id> io.cozy.files
+$ cozy-stack instances refresh-token-oauth cozy.tools:8080 <client-id> io.cozy.files
+$ $EDITOR tmp/config.json
+$ ./cozy-fuse -config tmp/config.json
+$ cd tmp/mount && ls -al
+```
 
 ## License
 
