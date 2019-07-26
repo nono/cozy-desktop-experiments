@@ -13,6 +13,13 @@ cd ..
 ./test1.sh
 ```
 
+## Naming files
+
+- https://en.wikipedia.org/wiki/Filename
+- https://docs.microsoft.com/fr-fr/windows/win32/fileio/naming-a-file
+- https://mjtsai.com/blog/2017/06/27/apfs-native-normalization/
+- http://www.wsanchez.net/papers/USENIX_2000/
+
 ## Timestamps for the file systems
 
 ### Windows
