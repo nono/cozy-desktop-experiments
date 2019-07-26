@@ -1,5 +1,9 @@
 # Proposition alternative à la OT
 
+Erwan m'a rapidement parlé de cette proposition qu'il avait en tête. J'ai
+essayé de mettre dans ce document ce que j'en avais compris, puis d'expliquer
+pourquoi cette proposition ne m'inspire guère confiance.
+
 ## Fonctionnement
 
 On utilise 4 bases de données, 2 pour la partie locale et 2 pour la partie
@@ -56,17 +60,37 @@ pour être une horreur à implémenter correctement avec tous les cas particulie
 (et je ne pense pas que l'on puisse une prendre une bibliothèque toute faite et
 l'utiliser directement dans notre cas).
 
-2. Les mécanismes anti-boucles me semblent compliqués à implémenter (quand un
+2. Les mécanismes anti boucles me semblent compliqués à implémenter (quand un
 fichier est ajouté sur le cozy, on va appliquer cette action sur le FS locale,
 ce qui va créer des événements inotify, et donc mettre à jour le FS local et
 rajouter une nouvelle action, mais si le fichier distant est modifié avant que
 cette action soit appliquée, il ne faut pas créer de conflit).
 
 3. Les mécanismes de rejeu en cas d'erreur me semblent également compliqués à
-implémenter.
+implémenter. Cela vient du fait que l'on ne peut pas simplement mettre en fin
+de liste une action, il faut la permuter avec les autres actions dans la file
+d'attente (par exemple, si l'action qui échoue est l'ajout d'un fichier dans un
+répertoire foo, et que l'action suivante consiste à renommer foo en bar, il
+faudra mettre à la fin de la liste une action pour ajouter le fichier dans le
+répertoire bar), et il n'est pas toujours possible de permuter les actions (on
+ne peut pas mettre la création d'un répertoire après l'ajout d'un fichier dans
+ce répertoire).
 
 4. Attention aux race conditions : événements du FS local qui remontent juste
 après une action distante qui a été appliquée par exemple.
 
 5. J'ai un doute sur la capacité à relancer le client desktop proprement après
 un crash (transactions ACID sur les bases de données ?).
+
+Globalement, j'ai le sentiment que cette proposition a un peu trop de points
+communs avec les faiblesses connues du client desktop actuelles : être capable
+d'interpréter correctement le changes feed de CouchDB en une série d'actions
+dans le bon ordre par exemple, ou la probable nécessité d'avoir des verrous
+assez larges autour des accès aux bases de données.
+
+Enfin, ce mécanisme de synchronisation risque de rendre difficile l'ajout de
+futures fonctionnalités telles que la synchronisation sélective, au lieu de les
+simplifier (on va ajouter de nouvelles combinaisons telles que fusionner une
+action de déplacement d'un fichier depuis un répertoire synchronisé vers un
+répertoire non-synchronisé, suivie d'une autre action de déplacement vers un
+répertoire synchronisé).
