@@ -30,6 +30,8 @@ users:
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/remote/warning_poller.js
 - sentry
 - use the XDG user-directories for config & co
+- update the version of the registered OAuth2 client
+- call the `/settings/synchronized` endpoint
 - etc.
 
 ## How-to test cozy-fuse in local

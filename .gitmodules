@@ -1,3 +1,0 @@
-[submodule "desktop"]
-	path = desktop
-	url = git@github.com:cozy-labs/cozy-desktop.git
