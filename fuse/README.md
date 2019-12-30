@@ -24,7 +24,8 @@ users:
 - UI
 - logs and a way to contact the support team
 - documentation and tests
-- packaging
+- packaging & auto-update
+- auto-start
 - use the trash of the local computer
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/config/.cozyignore
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/remote/warning_poller.js

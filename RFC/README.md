@@ -1,5 +1,8 @@
 # [RFC] A new start for cozy-desktop
 
+**Disclaimer**: this document was writen before versioning for files was
+available on Cozy. It changes a lot of things for conflict resolution.
+
 ## Introduction
 
 [Cozy Drive for Desktop](https://github.com/cozy-labs/cozy-desktop) allows you
