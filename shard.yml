@@ -1,0 +1,13 @@
+name: desktop
+version: 0.1.0
+
+authors:
+  - Bruno Michel <bmichel@menfin.info>
+
+targets:
+  desktop:
+    main: src/desktop.cr
+
+crystal: 0.32.1
+
+license: MIT
