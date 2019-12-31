@@ -1,3 +1,4 @@
+require "./file_info"
 require "./local/*"
 
 # TODO: Write documentation for `Desktop`
