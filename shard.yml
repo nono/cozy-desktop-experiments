@@ -1,12 +1,12 @@
-name: desktop
+name: cozy-desktop-ng
 version: 0.1.0
 
 authors:
   - Bruno Michel <bmichel@menfin.info>
 
 targets:
-  desktop:
-    main: src/desktop.cr
+  cozy-desktop-ng:
+    main: src/cli.cr
 
 crystal: 0.32.1
 
