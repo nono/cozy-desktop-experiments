@@ -26,6 +26,7 @@ users:
 - use the XDG user-directories for config & co
 - update the version of the registered OAuth2 client
 - call the `/settings/synchronized` endpoint
+- handling `.cozy-note` files
 - updating the dependencies with renovate or dependabot
 - write more documentation and publish it (`crystal docs`) on GitHub pages
 - etc.
