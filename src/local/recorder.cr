@@ -10,7 +10,8 @@ module Local
     end
 
     def start
-      watcher = Watcher.start(@dir)
+      channel = Channel(Symbol).new
+      watcher = Watcher.start(@dir, channel)
       @done.receive?
       watcher.close
     end
