@@ -1,4 +1,5 @@
 require "inotify"
+require "./event"
 
 module Local
   # TODO: Write documentation for `Watcher`
@@ -8,7 +9,7 @@ module Local
     end
 
     property dir : String
-    property channel : Channel(Symbol)
+    property channel : Channel(Event)
     property inotify : Inotify::Watcher
 
     def initialize(@dir, @channel)
@@ -17,9 +18,10 @@ module Local
     end
 
     private def spawn_ticker
+      tick = nil : Tick
       spawn do
         sleep seconds: 0.1
-        @channel.send :tick
+        @channel.send tick
       end
     end
 

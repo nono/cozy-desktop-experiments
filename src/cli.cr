@@ -1,4 +1,5 @@
 require "./desktop"
+require "./local/recorder"
 
 # TODO: parse option for argv = ARGV[1..]
 case ARGV.first?

@@ -1,3 +1,6 @@
+require "./analyzer"
+require "./watcher"
+
 module Local
   # TODO: write documentation for `Recorder`
   class Recorder
@@ -10,7 +13,7 @@ module Local
     end
 
     def start
-      channel = Channel(Symbol).new
+      channel = Channel(Event).new
       watcher = Watcher.start(@dir, channel)
       @done.receive?
       watcher.close

@@ -1,5 +1,6 @@
 require "./file_info"
-require "./local/*"
+require "./local/analyzer"
+require "./local/watcher"
 
 # TODO: Write documentation for `Desktop`
 module Desktop

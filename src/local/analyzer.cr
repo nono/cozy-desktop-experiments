@@ -1,3 +1,6 @@
+require "./event"
+require "./store"
+
 module Local
   class Analyzer
     struct Response
@@ -7,10 +10,10 @@ module Local
       end
     end
 
-    def initialize(@store : Local::Store)
+    def initialize(@store : Store)
     end
 
-    def receive(event : Local::Event)
+    def receive(event : Event)
     end
   end
 end
