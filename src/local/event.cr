@@ -1,7 +1,23 @@
 module Local
-  alias FilePath = String
+  struct FilePath
+    property path : String
 
-  alias Tick = Nil
+    def initialize(@path)
+    end
+  end
 
-  alias Event = Tick
+  class FileEvent
+    property path : FilePath
+
+    def initialize(@path)
+    end
+  end
+
+  enum TemporalEvent
+    Start
+    Stop
+    Tick
+  end
+
+  alias Event = FileEvent | TemporalEvent
 end

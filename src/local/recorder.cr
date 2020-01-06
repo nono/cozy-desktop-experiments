@@ -1,4 +1,5 @@
-require "./analyzer"
+require "./analyze"
+require "./store"
 require "./watcher"
 
 module Local
@@ -9,18 +10,26 @@ module Local
     end
 
     def initialize(@dir : String)
-      @done = Channel(Nil).new
+      @channel = Channel(Event).new(capacity: 1000)
     end
 
     def start
-      channel = Channel(Event).new
-      watcher = Watcher.start(@dir, channel)
-      @done.receive?
-      watcher.close
+      store = Store.new
+      watcher = Watcher.start(@dir, @channel)
+
+      loop do
+        event = @channel.receive
+        pp! event
+        effects = Local.analyze(store, event)
+        pp! effects
+        watcher.close if event == TemporalEvent::Stop
+      end
+    rescue Channel::ClosedError
+      # We are done
     end
 
     def stop
-      @done.send nil
+      @channel.send TemporalEvent::Stop
     end
   end
 end

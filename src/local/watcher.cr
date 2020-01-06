@@ -13,19 +13,21 @@ module Local
     property inotify : Inotify::Watcher
 
     def initialize(@dir, @channel)
-      @inotify = spawn_inotify
-      spawn_ticker
+      @inotify = inotify
+      spawn ticker
+      @channel.send TemporalEvent::Start
     end
 
-    private def spawn_ticker
-      tick = nil : Tick
+    def ticker
       spawn do
-        sleep seconds: 0.1
-        @channel.send tick
+        loop do
+          sleep seconds: 0.1
+          @channel.send TemporalEvent::Tick
+        end
       end
     end
 
-    private def spawn_inotify
+    def inotify
       Inotify.watch @dir do |event|
         pp! event
         path = File.join([event.path, event.name].select(String))
