@@ -10,12 +10,12 @@ module Local
 
     property dir : String
     property channel : Channel(Event)
-    property inotify : Inotify::Watcher
+    property notifiers : Array(Inotify::Watcher)
 
     def initialize(@dir, @channel)
-      @inotify = inotify
-      spawn ticker
+      @notifiers = [] of Inotify::Watcher
       @channel.send TemporalEvent::Start
+      spawn ticker
     end
 
     def ticker
@@ -27,21 +27,31 @@ module Local
       end
     end
 
-    def inotify
-      Inotify.watch @dir do |event|
+    def apply(effect : Scan)
+      dir = File.join @dir, effect.path
+      pp! dir
+      notifier = Inotify.watch dir do |event|
         pp! event
         path = File.join([event.path, event.name].select(String))
         begin
-          inode = File.info(path).ino
-          pp! inode
+          info = File.info(path)
+          pp! info.ino
+          path = FilePath.new(path.lchop @dir)
+          @channel.send FileEvent.new(path)
         rescue
           pp "no inode number"
         end
       end
+      @notifiers << notifier
     end
 
-    def close
-      @inotify.close
+    def apply(effect : Close)
+      @notifiers.each &.close
+      @notifiers = [] of Inotify::Watcher
+    end
+
+    def apply(effect : Checksum)
+      # TODO
     end
   end
 end

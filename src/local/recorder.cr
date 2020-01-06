@@ -16,13 +16,22 @@ module Local
     def start
       store = Store.new
       watcher = Watcher.start(@dir, @channel)
+      ticks = 0
 
       loop do
         event = @channel.receive
-        pp! event
+        if event == TemporalEvent::Tick
+          ticks += 1
+        else
+          puts "+#{ticks}" if ticks > 0
+          ticks = 0
+          pp! event
+        end
         effects = Local.analyze(store, event)
-        pp! effects
-        watcher.close if event == TemporalEvent::Stop
+        effects.each do |effect|
+          pp! effect
+          watcher.apply effect
+        end
       end
     rescue Channel::ClosedError
       # We are done
