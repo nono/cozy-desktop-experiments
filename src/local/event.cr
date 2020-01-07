@@ -8,8 +8,9 @@ module Local
 
   class FileEvent
     property path : FilePath
+    property type : File::Type
 
-    def initialize(@path)
+    def initialize(@path, @type)
     end
   end
 

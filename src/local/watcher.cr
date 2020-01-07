@@ -32,17 +32,15 @@ module Local
       pp! dir
       notifier = Inotify.watch dir do |event|
         pp! event
-        path = File.join([event.path, event.name].select(String))
-        begin
-          info = File.info(path)
-          pp! info.ino
-          path = FilePath.new(path.lchop @dir)
-          @channel.send FileEvent.new(path)
-        rescue
-          pp "no inode number"
-        end
+        fullpath = File.join([event.path, event.name].select(String))
+        prepare_file_event fullpath
       end
       @notifiers << notifier
+      Dir.entries(dir).each do |name|
+        next if name == "." || name == ".."
+        fullpath = File.join dir, name
+        prepare_file_event fullpath
+      end
     end
 
     def apply(effect : Close)
@@ -52,6 +50,15 @@ module Local
 
     def apply(effect : Checksum)
       # TODO
+    end
+
+    def prepare_file_event(fullpath : String)
+      info = File.info(fullpath)
+      pp! info.ino
+      path = FilePath.new(fullpath.lchop @dir)
+      @channel.send FileEvent.new(path, info.type)
+    rescue
+      pp "no inode number"
     end
   end
 end
