@@ -22,26 +22,31 @@ class Runner
     Stopped
   end
 
-  def initialize(@local, @remote, @sync)
+  module Side
+    abstract def start
+    abstract def stop
+    abstract def on_ready(&blk)
+    abstract def on_stopped(&blk)
+  end
+
+  def initialize(@local : Side, @remote : Side, @sync : Side)
     @chan = Channel(Message).new(3)
-    @can_start = Channel(Atom).new(1)
-    @can_stop = Channel(Atom).new(1)
+    @can_start = Mutex.new
+    @can_stop = Channel(Symbol).new(1)
     @count = 0
 
-    @local.on_ready { @chan.send Ready }
-    @remote.on_ready { @chan.send Ready }
+    @local.on_ready { @chan.send Message::Ready }
+    @remote.on_ready { @chan.send Message::Ready }
 
-    @local.on_stopped { @chan.send Stopped }
-    @remote.on_stopped { @chan.send Stopped }
-    @sync.on_stopped { @chan.send Stopped }
-
-    @can_start.send :token
+    @local.on_stopped { @chan.send Message::Stopped }
+    @remote.on_stopped { @chan.send Message::Stopped }
+    @sync.on_stopped { @chan.send Message::Stopped }
   end
 
   # run is a blocking call to starts the 3 components with the good time, and
   # to stop them when asked for it.
   def run
-    @can_start.receive
+    @can_start.lock
     @can_stop.send :token
 
     if !cancelled?
@@ -61,20 +66,20 @@ class Runner
 
       wait_all_stopped
     end
-
-    @can_start.send :token
+  ensure
+    @can_start.unlock
   end
 
   private def cancelled?
-    timeout = Time.after(Time::Span.new(nanoseconds: 100_000))
+    timeout = after(Time::Span.new(nanoseconds: 100_000))
     received = Channel.receive_first(@chan, timeout)
-    return received == Stop
+    return received == Message::Stop
   end
 
   private def initialized
     2.times do
       received = @chan.receive
-      return false if received == Stop
+      return false if received == Message::Stop
     end
     return true
   end
@@ -82,14 +87,14 @@ class Runner
   private def wait_for_stop
     loop do
       msg = @chan.receive
-      return if msg.what == Stop
+      return if msg == Message::Stop
     end
   end
 
   private def wait_all_stopped
     while @count > 0
       msg = @chan.receive
-      @count -= 1 if msg.what == Stopped
+      @count -= 1 if msg == Message::Stopped
     end
   end
 
@@ -103,12 +108,22 @@ class Runner
   #    end
   def stop
     @can_stop.receive
-    @chan.send Stop
+    @chan.send Message::Stop
   end
 
   # wait_final_stop can be called to ensure that the runner is stopped and
   # cannot restart. It is useful when the client wants to exit.
   def wait_final_stop
-    @can_start.receive
+    @can_start.lock
+  end
+
+  # TODO: find another place to put this method
+  private def after(time : Time::Span)
+    channel = Channel(Nil).new(1)
+    spawn do
+      sleep time
+      channel.send nil
+    end
+    channel
   end
 end
