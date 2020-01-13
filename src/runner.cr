@@ -22,14 +22,14 @@ class Runner
     Stopped
   end
 
-  module Side
+  module Component
     abstract def start
     abstract def stop
     abstract def on_ready(&blk)
     abstract def on_stopped(&blk)
   end
 
-  def initialize(@local : Side, @remote : Side, @sync : Side)
+  def initialize(@local : Component, @remote : Component, @sync : Component)
     @chan = Channel(Message).new(3)
     @can_start = Mutex.new
     @can_stop = Channel(Symbol).new(1)

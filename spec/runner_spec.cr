@@ -1,7 +1,7 @@
 require "./spec_helper"
 
-class SideMock
-  include Runner::Side
+class ComponentMock
+  include Runner::Component
 
   property :state
 
@@ -51,28 +51,28 @@ end
 
 describe Runner do
   it "works" do
-    local = SideMock.new
-    remote = SideMock.new
-    sync = SideMock.new
+    local = ComponentMock.new
+    remote = ComponentMock.new
+    sync = ComponentMock.new
     runner = Runner.new(local, remote, sync)
 
-    spawn runner.run
     5.times do
       spawn do
-        nano = Random.rand 100_000_000
+        nano = Random.rand 10_000_000
         sleep Time::Span.new(nanoseconds: nano)
         runner.stop
         runner.run
       end
     end
 
-    nano = 50_000_000 + Random.rand(100_000_000)
+    runner.run
+    nano = 5_000_000 + Random.rand(10_000_000)
     sleep Time::Span.new(nanoseconds: nano)
     runner.stop
     runner.wait_final_stop
 
     local.state.should eq :stopped
     remote.state.should eq :stopped
-    sync.state.should eq :stopped
+    [:initial, :stopped].should contain sync.state
   end
 end
