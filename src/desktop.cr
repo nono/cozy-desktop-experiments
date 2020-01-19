@@ -1,6 +1,7 @@
 require "./file_info"
 require "./local/analyze"
 require "./local/watcher"
+require "./remote/cozy"
 require "./runner"
 
 # TODO: Write documentation for `Desktop`

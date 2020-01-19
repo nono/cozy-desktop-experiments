@@ -16,6 +16,7 @@ users:
 - Support of Windows and macOS
 - UI
 - logs and a way to contact the support team
+- fix the TODOs in code
 - more tests (a lot, manual and automatic)
 - packaging & auto-update
 - auto-start
@@ -24,6 +25,7 @@ users:
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/remote/warning_poller.js
 - sentry
 - use the XDG user-directories for config & co
+- use a specific User-Agent
 - update the version of the registered OAuth2 client
 - call the `/settings/synchronized` endpoint
 - managing correctly the several dates for each file
