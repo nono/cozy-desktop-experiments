@@ -30,6 +30,8 @@ module Local
     def apply(effect : Scan)
       dir = File.join @dir, effect.path
       pp! dir
+      # TODO: check what happens if the dir is deleted just right when we try
+      # to watch it
       notifier = Inotify.watch dir do |event|
         pp! event
         fullpath = File.join([event.path, event.name].select(String))
@@ -41,6 +43,7 @@ module Local
         fullpath = File.join dir, name
         prepare_file_event fullpath
       end
+      @channel.send TemporalEvent::Scanned
     end
 
     def apply(effect : Close)

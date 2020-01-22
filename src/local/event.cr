@@ -18,6 +18,7 @@ module Local
     Start
     Stop
     Tick
+    Scanned
   end
 
   alias Event = FileEvent | TemporalEvent

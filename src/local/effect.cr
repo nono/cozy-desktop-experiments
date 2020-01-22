@@ -10,6 +10,9 @@ module Local
     end
   end
 
+  struct BeReady
+  end
+
   struct Close
   end
 
@@ -22,5 +25,5 @@ module Local
     end
   end
 
-  alias Effect = Scan | Close | Checksum
+  alias Effect = Scan | BeReady | Close | Checksum
 end
