@@ -30,6 +30,8 @@ module Local
   def analyze(store : Store, event : FileEvent) : Array(Effect)
     effects = [] of Effect
     if event.type == File::Type::Directory
+      # TODO: should we wait a few ticks to detect files moved during the
+      # initial scan
       store.scan_counter += 1
       effects << Scan.new(event.path)
     end
