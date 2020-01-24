@@ -6,12 +6,12 @@ module Local
   class Component
     def initialize(@dir : String)
       @channel = Channel(Event).new(capacity: 1000)
-      @event = ->{}
+      @event = ->(event : Event) {}
       @ready = ->{}
       @stopped = ->{}
     end
 
-    def on_event(&blk)
+    def on_event(&blk : Event -> Nil)
       @event = blk
     end
 
@@ -42,7 +42,7 @@ module Local
     end
 
     def stop
-      @channel.send TemporalEvent::Stop
+      @channel.send Stop.new
     end
   end
 end

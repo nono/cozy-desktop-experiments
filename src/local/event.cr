@@ -14,12 +14,19 @@ module Local
     end
   end
 
-  enum TemporalEvent
-    Start
-    Stop
-    Tick
-    Scanned
+  struct Start
   end
+
+  struct Stop
+  end
+
+  struct Tick
+  end
+
+  struct Scanned
+  end
+
+  alias TemporalEvent = Start | Stop | Tick | Scanned
 
   alias Event = FileEvent | TemporalEvent
 end

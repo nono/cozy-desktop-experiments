@@ -12,6 +12,14 @@ module Local
       # @component.on_event { |event| on_event(event) }
     end
 
+    def start
+      @component.start
+    end
+
+    def stop
+      @component.stop
+    end
+
     def on_event(event)
       ticks = 0
       if event == TemporalEvent::Tick
@@ -21,10 +29,6 @@ module Local
         ticks = 0
         pp! event
       end
-    end
-
-    def stop
-      @component.stop
     end
   end
 end

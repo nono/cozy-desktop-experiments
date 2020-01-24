@@ -14,7 +14,7 @@ module Local
 
     def initialize(@dir, @channel)
       @notifiers = [] of Inotify::Watcher
-      @channel.send TemporalEvent::Start
+      @channel.send Start.new
       spawn ticker
     end
 
@@ -22,7 +22,7 @@ module Local
       spawn do
         loop do
           sleep seconds: 0.1
-          @channel.send TemporalEvent::Tick
+          @channel.send Tick.new
         end
       end
     end
@@ -43,7 +43,7 @@ module Local
         fullpath = File.join dir, name
         prepare_file_event fullpath
       end
-      @channel.send TemporalEvent::Scanned
+      @channel.send Scanned.new
     end
 
     def apply(effect : Close)
@@ -53,6 +53,9 @@ module Local
 
     def apply(effect : Checksum)
       # TODO
+    end
+
+    def apply(effect : BeReady)
     end
 
     def prepare_file_event(fullpath : String)

@@ -7,20 +7,21 @@ module Local
 
   Root = FilePath.new("/")
 
-  def analyze(store : Store, event : TemporalEvent::Start) : Array(Effect)
+  def analyze(store : Store, event : Start) : Array(Effect)
     store.scan_counter += 1
     [Scan.new(Root)] of Effect
   end
 
-  def analyze(store : Store, event : TemporalEvent::Stop) : Array(Effect)
+  def analyze(store : Store, event : Stop) : Array(Effect)
     [Close.new] of Effect
   end
 
-  def analyze(store : Store, event : TemporalEvent::Tick) : Array(Effect)
+  def analyze(store : Store, event : Tick) : Array(Effect)
     # Nothing for the moment
+    [] of Effect
   end
 
-  def analyze(store : Store, event : TemporalEvent::Scanned) : Array(Effect)
+  def analyze(store : Store, event : Scanned) : Array(Effect)
     store.scan_counter -= 1
     effects = [] of Effect
     effects << BeReady.new if store.scan_counter == 0
