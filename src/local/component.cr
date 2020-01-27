@@ -1,9 +1,12 @@
 require "./analyze"
 require "./store"
 require "./watcher"
+require "../interfaces/component"
 
 module Local
   class Component
+    include ::ReadyComponent
+
     def initialize(@dir : String)
       @channel = Channel(Event).new(capacity: 1000)
       @event = ->(event : Event) {}

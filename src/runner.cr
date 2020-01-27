@@ -1,3 +1,5 @@
+require "./interfaces/component"
+
 # The runner ensures the coordination between 3 components: the local and
 # remote sides, and sync. It is expected that the runner is created and then is
 # called by this methods:
@@ -22,14 +24,7 @@ class Runner
     Stopped
   end
 
-  module Component
-    abstract def start
-    abstract def stop
-    abstract def on_ready(&blk)
-    abstract def on_stopped(&blk)
-  end
-
-  def initialize(@local : Component, @remote : Component, @sync : Component)
+  def initialize(@local : ReadyComponent, @remote : ReadyComponent, @sync : Component)
     @chan = Channel(Message).new(3)
     @can_start = Mutex.new
     @can_stop = Channel(Symbol).new(1)

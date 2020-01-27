@@ -1,7 +1,7 @@
 require "./spec_helper"
 
 class ComponentMock
-  include Runner::Component
+  include ::ReadyComponent
 
   property :state
 
