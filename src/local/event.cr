@@ -1,8 +1,14 @@
 module Local
+  # TODO use https://crystal-lang.org/api/0.32.1/Path.html
   struct FilePath
     property path : String
 
     def initialize(@path)
+    end
+
+    # TODO: find a better name for to_s
+    def to_s
+      @path
     end
   end
 
@@ -24,9 +30,23 @@ module Local
   end
 
   struct Scanned
+    property path : FilePath
+
+    def initialize(@path)
+    end
   end
 
-  alias TemporalEvent = Start | Stop | Tick | Scanned
+  struct Checksummed
+    property path : FilePath
+    property sum : String
 
-  alias Event = FileEvent | TemporalEvent
+    def initialize(@path, @sum)
+    end
+  end
+
+  alias TemporalEvent = Start | Stop | Tick
+
+  alias OperationEvent = Scanned | Checksummed
+
+  alias Event = FileEvent | TemporalEvent | OperationEvent
 end

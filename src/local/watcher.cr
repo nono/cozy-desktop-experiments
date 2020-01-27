@@ -1,4 +1,5 @@
 require "inotify"
+require "digest/md5"
 require "./event"
 
 module Local
@@ -28,7 +29,7 @@ module Local
     end
 
     def apply(effect : Scan)
-      dir = File.join @dir, effect.path
+      dir = File.join @dir, effect.path.to_s
       pp! dir
       # TODO: check what happens if the dir is deleted just right when we try
       # to watch it
@@ -43,7 +44,7 @@ module Local
         fullpath = File.join dir, name
         prepare_file_event fullpath
       end
-      @channel.send Scanned.new
+      @channel.send Scanned.new(effect.path)
     end
 
     def apply(effect : Close)
@@ -51,7 +52,19 @@ module Local
       @notifiers = [] of Inotify::Watcher
     end
 
-    def apply(effect : Checksum)
+    def apply(effect : ComputeChecksum)
+      fullpath = File.join @dir, effect.path.to_s
+      sum = Digest::MD5.hexdigest do |ctx|
+        File.open fullpath do |f|
+          slice = Bytes.new(4096)
+          while f.read(slice) > 0
+            ctx.update slice
+          end
+        end
+      end
+      event = Checksummed.new(effect.path, sum)
+      @channel.send event
+    rescue
       # TODO
     end
 

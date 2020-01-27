@@ -2,11 +2,9 @@ require "./event"
 
 module Local
   struct Scan
-    def initialize(@path : FilePath)
-    end
+    property path : FilePath
 
-    def path
-      @path.path
+    def initialize(@path)
     end
   end
 
@@ -16,14 +14,12 @@ module Local
   struct Close
   end
 
-  struct Checksum
-    def initialize(@path : FilePath)
-    end
+  struct ComputeChecksum
+    property path : FilePath
 
-    def path
-      @path.path
+    def initialize(@path)
     end
   end
 
-  alias Effect = Scan | BeReady | Close | Checksum
+  alias Effect = Scan | BeReady | Close | ComputeChecksum
 end

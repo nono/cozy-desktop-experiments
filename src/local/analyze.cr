@@ -24,15 +24,20 @@ module Local
   def analyze(store : Store, event : Scanned) : Array(Effect)
     store.scan_counter -= 1
     effects = [] of Effect
+    # TODO: should we wait a few ticks to detect files moved during the initial
+    # scan
     effects << BeReady.new if store.scan_counter == 0
     effects
+  end
+
+  def analyze(store : Store, event : Checksummed) : Array(Effect)
+    # Nothing for the moment
+    [] of Effect
   end
 
   def analyze(store : Store, event : FileEvent) : Array(Effect)
     effects = [] of Effect
     if event.type == File::Type::Directory
-      # TODO: should we wait a few ticks to detect files moved during the
-      # initial scan
       store.scan_counter += 1
       effects << Scan.new(event.path)
     end
