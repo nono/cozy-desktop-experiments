@@ -53,19 +53,19 @@ module Local
     end
 
     def apply(effect : ComputeChecksum)
-      fullpath = File.join @dir, effect.path.to_s
-      sum = Digest::MD5.hexdigest do |ctx|
-        File.open fullpath do |f|
-          slice = Bytes.new(4096)
-          while f.read(slice) > 0
-            ctx.update slice
+      Fiber.new do
+        fullpath = File.join @dir, effect.path.to_s
+        sum = Digest::MD5.hexdigest do |ctx|
+          File.open fullpath do |f|
+            slice = Bytes.new(4096)
+            while f.read(slice) > 0
+              ctx.update slice
+            end
           end
         end
+        event = Checksummed.new(effect.path, sum)
+        @channel.send event
       end
-      event = Checksummed.new(effect.path, sum)
-      @channel.send event
-    rescue
-      # TODO
     end
 
     def apply(effect : BeReady)

@@ -48,5 +48,10 @@ module Local
 
   alias OperationEvent = Scanned | Checksummed
 
+  # In go, it should probably be something like:
+  #
+  # type Event interface {
+  #   Analyze(store Store) []Effect
+  # }
   alias Event = FileEvent | TemporalEvent | OperationEvent
 end

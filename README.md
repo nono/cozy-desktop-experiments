@@ -12,26 +12,28 @@ There are a lot of things that are out of the scope for this proof of concept.
 This work would be needed if we want to release a new desktop client for Cozy
 users:
 
-- Rewrite the code to make it more robust
-- Support of Windows and macOS
-- UI
-- logs and a way to contact the support team
+- Add support of Windows and macOS
+- add UI
+- improve the code to make it more robust
+- add logs and a way to contact the support team
+- use sentry to report errors
 - fix the TODOs in code
-- more tests (a lot, manual and automatic)
-- packaging & auto-update
-- auto-start
+- add more tests (a lot, manual and automatic)
+- packaging, auto-update, auto-start
 - use the trash of the local computer
+- alert the user when the disk space is full (both cozy and hard drive)
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/config/.cozyignore
 - https://github.com/cozy-labs/cozy-desktop/blob/master/core/remote/warning_poller.js
-- sentry
 - use the XDG user-directories for config & co
 - use a specific User-Agent
+- refresh the OAuth tokens
 - update the version of the registered OAuth2 client
 - call the `/settings/synchronized` endpoint
 - managing correctly the several dates for each file
 - handling `.cozy-note` files
 - updating the dependencies with renovate or dependabot
 - write more documentation and publish it (`crystal docs`) on GitHub pages
+- use extended attributes on linux to detect inode reuses for operations when the client is stopped
 - etc.
 
 ## Links
