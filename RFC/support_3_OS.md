@@ -6,6 +6,40 @@
 - https://docs.microsoft.com/fr-fr/windows/win32/fileio/naming-a-file
 - https://mjtsai.com/blog/2017/06/27/apfs-native-normalization/
 - http://www.wsanchez.net/papers/USENIX_2000/
+- https://help.dropbox.com/en-us/installs-integrations/sync-uploads/files-not-syncing
+
+## Extended attributes
+
+GNU/Linux and macOS have [extended file attributes](https://en.wikipedia.org/wiki/Extended_file_attributes).
+On windows, alternate data streams can be used to emulate them.
+
+- https://www.freedesktop.org/wiki/CommonExtendedAttributes/
+
+### Why not using extended attributes to track files moved/renamed?
+
+1. The hard case is a software that write a new version of a file in a
+   temporary place, and then replaces the file but the new version. The
+   extended attributes doesn't help us in this case. So, if an event from the
+   FS watcher is for file with no extended attributes, we still have to rely
+   on another way to check if it is the same file or not than a previous file.
+2. And, in the other case, for an event for a file with an extended attribute,
+   we have to check if it is a move/rename or a copy. And, again, we have to
+   rely on another method to do check that.
+3. Reading the extended attributes is a system call, and as such, it takes
+   time, and during this time, other operations can take place on the file
+   system. Adding latency to the analyze increases the risk of race conditions.
+
+So, using extended attributes has a high cost and a low signal for this use
+case. And that's why we don't use them. But, I still think they can be useful
+in specific cases:
+
+- on Linux, when the client is stopped, FS operations can lead to inodes being
+  reused
+- when a desktop client is revoked and connected again.
+
+In those two cases, information has been lost by the client, and it can't use
+its usual method to detect files that have been moved/renamed in a reliable way.
+Extended file attributes could be useful here.
 
 ## Timestamps for the file systems
 
