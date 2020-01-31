@@ -8,12 +8,10 @@ require "./sync/component"
 module Desktop
   VERSION = "0.1.0"
 
-  def self.start(dir : String)
+  def self.create_runner(dir : String)
     local = Local::Component.new dir
     remote = Remote::Component.new
     sync = Sync::Component.new
-    runner = Runner.new local: local, remote: remote, sync: sync
-    runner.run
-    runner
+    Runner.new local: local, remote: remote, sync: sync
   end
 end

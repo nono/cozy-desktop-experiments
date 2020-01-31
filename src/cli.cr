@@ -5,18 +5,23 @@ require "./local/recorder"
 case ARGV.first?
 when "record"
   dir = File.expand_path "../tmp/Cozy", __DIR__
-  recorder = Local::Recorder.start dir
+  recorder = Local::Recorder.new dir
   Signal::INT.trap do
     STDERR.puts "Exit"
     recorder.stop
+    exit
   end
+  recorder.start
 when "sync"
   dir = File.expand_path "../tmp/Cozy", __DIR__
-  runner = Desktop.start dir
+  runner = Desktop.create_runner dir
   Signal::INT.trap do
     STDERR.puts "Exit"
     runner.stop
+    runner.wait_final_stop
+    exit
   end
+  runner.run
 else
   puts "Usage: #{PROGRAM_NAME} sync"
 end
