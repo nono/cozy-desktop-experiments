@@ -1,5 +1,6 @@
 require "./desktop"
 require "./local/recorder"
+require "./web/dev"
 
 # TODO: parse option for argv = ARGV[1..]
 case ARGV.first?
@@ -22,6 +23,13 @@ when "sync"
     exit
   end
   runner.run
+when "web"
+  Signal::INT.trap do
+    STDERR.puts "Exit"
+    Kemal.stop
+    exit
+  end
+  Web::Dev.run
 else
   puts "Usage: #{PROGRAM_NAME} sync"
 end
