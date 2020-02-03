@@ -4,6 +4,10 @@ shards:
     github: crystal-loot/exception_page
     version: 0.1.2
 
+  faker:
+    github: askn/faker
+    version: 0.4.0
+
   inotify:
     github: petoem/inotify.cr
     version: 1.0.1

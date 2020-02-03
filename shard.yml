@@ -13,6 +13,8 @@ crystal: 0.32.1
 license: AGPLv3
 
 dependencies:
+  faker:
+    github: askn/faker
   inotify:
     github: petoem/inotify.cr
     version: 1.0.1
