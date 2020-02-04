@@ -12,8 +12,8 @@ module Simulator
     end
 
     def run
-      run_init
       @scenario.clients.each_with_index do |_, index|
+        run_init
         start_client index
       end
       run_ops
@@ -48,18 +48,18 @@ module Simulator
 
     def start_client(index)
       sleep
-      add StartClient.new(index)
+      add StartClient.new(client: index)
     end
 
     def stop_client(index)
       sleep
-      add StopClient.new(index)
+      add StopClient.new(client: index)
     end
 
     def sleep
       # TODO: generate more different values
       ms = 2 ** (1 + Random.rand(15))
-      add Sleep.new(ms)
+      add Sleep.new(ms: ms)
     end
 
     def create_dir

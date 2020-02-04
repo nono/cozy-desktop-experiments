@@ -1,43 +1,14 @@
 module Simulator
-  struct StartClient
-    property nb : Int32
+  # client is the index in the clients list of the scenario
+  alias StartClient = NamedTuple(client: Int32)
+  alias StopClient = NamedTuple(client: Int32)
+  alias Sleep = NamedTuple(ms: Int32)
 
-    def initialize(@nb)
-    end
-  end
+  # ms is the time taken to scan this directory
+  alias CreateDir = NamedTuple(client: Int32, path: String, ms: Int32)
 
-  struct StopClient
-    property nb : Int32
-
-    def initialize(@nb)
-    end
-  end
-
-  struct Sleep
-    property ms : Int32
-
-    def initialize(@ms)
-    end
-  end
-
-  struct CreateDir
-    property client : Int32
-    property path : String
-    property ms : Int32 # How much time does it take to scan this dir
-
-    def initialize(*, @client, @path, @ms)
-    end
-  end
-
-  struct CreateFile
-    property client : Int32
-    property path : String
-    property size : Int32
-    property ms : Int32 # How much time does it take to read this file
-
-    def initialize(*, @client, @path, @size, @ms)
-    end
-  end
+  # ms is the tuime taken to read the file (e.g. for checksum)
+  alias CreateFile = NamedTuple(client: Int32, path: String, size: Int32, ms: Int32)
 
   alias Operation = StartClient |
                     StopClient |

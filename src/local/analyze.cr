@@ -9,7 +9,7 @@ module Local
 
   def analyze(store : Store, event : Start) : Array(Effect)
     store.scan_counter += 1
-    [Scan.new(Root)] of Effect
+    [Scan.new(path: Root)] of Effect
   end
 
   def analyze(store : Store, event : Stop) : Array(Effect)
@@ -37,9 +37,9 @@ module Local
 
   def analyze(store : Store, event : FileEvent) : Array(Effect)
     effects = [] of Effect
-    if event.type == File::Type::Directory
+    if event[:type] == File::Type::Directory
       store.scan_counter += 1
-      effects << Scan.new(event.path)
+      effects << Scan.new(path: event[:path])
     end
     effects
   end

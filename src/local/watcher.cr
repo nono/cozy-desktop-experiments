@@ -54,7 +54,7 @@ module Local
 
     def apply(effect : ComputeChecksum)
       Fiber.new do
-        fullpath = File.join @dir, effect.path.to_s
+        fullpath = File.join @dir, effect[:path].to_s
         sum = Digest::MD5.hexdigest do |ctx|
           File.open fullpath do |f|
             slice = Bytes.new(4096)
@@ -63,7 +63,7 @@ module Local
             end
           end
         end
-        event = Checksummed.new(effect.path, sum)
+        event = Checksummed.new(path: effect[:path], sum: sum)
         @channel.send event
       end
     end

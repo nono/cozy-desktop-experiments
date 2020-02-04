@@ -12,13 +12,7 @@ module Local
     end
   end
 
-  class FileEvent
-    property path : FilePath
-    property type : File::Type
-
-    def initialize(@path, @type)
-    end
-  end
+  alias FileEvent = NamedTuple(path: FilePath, type: File::Type)
 
   struct Start
   end
@@ -29,23 +23,10 @@ module Local
   struct Tick
   end
 
-  struct Scanned
-    property path : FilePath
-
-    def initialize(@path)
-    end
-  end
-
-  struct Checksummed
-    property path : FilePath
-    property sum : String
-
-    def initialize(@path, @sum)
-    end
-  end
+  alias Scanned = NamedTuple(path: FilePath)
+  alias Checksummed = NamedTuple(path: FilePath, sum: String)
 
   alias TemporalEvent = Start | Stop | Tick
-
   alias OperationEvent = Scanned | Checksummed
 
   # In go, it should probably be something like:

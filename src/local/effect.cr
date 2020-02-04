@@ -1,12 +1,7 @@
 require "./event"
 
 module Local
-  struct Scan
-    property path : FilePath
-
-    def initialize(@path)
-    end
-  end
+  alias Scan = NamedTuple(path: FilePath)
 
   struct BeReady
   end
@@ -14,12 +9,7 @@ module Local
   struct Close
   end
 
-  struct ComputeChecksum
-    property path : FilePath
-
-    def initialize(@path)
-    end
-  end
+  alias ComputeChecksum = NamedTuple(path: FilePath)
 
   alias Effect = Scan | BeReady | Close | ComputeChecksum
 end

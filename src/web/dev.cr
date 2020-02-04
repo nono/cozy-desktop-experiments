@@ -1,5 +1,5 @@
 require "kemal"
-require "../simulator/generate"
+require "../simulator/*"
 
 macro my_render(filename)
   render "src/web/views/#{{{filename}}}.ecr", "src/web/views/layout.ecr"
@@ -42,6 +42,15 @@ module Web
         nb_clients = env.params.json["nb_clients"].as(Int64)
         scenario = Simulator::Generate.new(nb_clients).run
         # scenario.to_json
+      end
+
+      post "/play" do |env|
+        env.response.content_type = "application/json"
+        scenario = Simulator::Generate.new(1).run # TODO: load the scenario from the request
+        play = Simulator::Play.new(scenario)
+        play.run
+        errors = play.check
+        # errors.to_json
       end
 
       error 404 do
