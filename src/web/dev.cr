@@ -30,7 +30,7 @@ module Web
 
     def self.setup_router
       get "/" do |env|
-        env.redirect "/generate"
+        my_render "index"
       end
 
       get "/generate" do

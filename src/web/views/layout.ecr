@@ -3,31 +3,49 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/cozy-ui/dist/cozy-ui.min.css">
     <title>cozy-desktop.cr</title>
   </head>
   <body>
-    <nav class="navbar navbar-dark bg-dark flex-md-nowrap p-0 shadow">
-      <a class="navbar-brand col-sm-3 col-md-2 mr-0 py-2" href="/">cozy-desktop.cr</a>
+    <nav role="banner" class="u-h-3 u-flex u-flex-items-center u-flex-content-start">
+      <span class="c-nav-icon is-active u-m-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M9.734 5.995c0-.55.45-.995.99-.995h4.02a1 1 0 0 1 .99.995v8.01c0 .55-.451.995-.99.995h-4.02a1 1 0 0 1-.99-.995v-8.01zm2 1.005v6h2V7h-2zm-11-5.002c0-.551.447-.998.998-.998h11.003c.552 0 .999.444.999 1v1h-11v6h5v4H.73c-.55 0-.858-.417-.68-.95L.733 10V1.998z"></path>
+        </svg>
+      </span>
+      <a class="u-title-h1" href="/">cozy-desktop.cr</a>
     </nav>
 
-    <div class="container-fluid">
-      <div class="row">
-        <nav class="col-md-2 d-block bg-light sidebar">
-          <div class="sidebar-sticky">
-            <h3 class="sidebar-heading px-3 mt-4 mb-1 text-muted">Simulator</h3>
-            <ul class="nav flex-column">
-              <li class="nav-item">
-                <a class="nav-link active" href="/generate">Generate a scenario</a>
-              </li>
-            </ul>
-          </div>
-        </nav>
+    <div role="application">
+      <nav>
+        <ul class="c-nav">
+          <li class="c-nav-item">
+            <a class="c-nav-link is-active" href="/">
+              <span class="c-nav-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                  <path d="M.416 7.584C-.366 8.366-.105 9 1 9v5.997A.999.999 0 0 0 2 16h4v-5h4v5h4c.552 0 1-.438 1-1.003V9c1.105 0 1.367-.633.584-1.416L8 0 .416 7.584z"></path>
+                </svg>
+              </span>
+              <span class="c-nav-text">Scenarios</span>
+            </a>
+          </li>
+          <li class="c-nav-item">
+            <a class="c-nav-link" href="/generate">
+              <span class="c-nav-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                  <path d="M1 1c0-.552.446-1 .998-1H10v5h5v10.004a1 1 0 0 1-1.007.996H2.007A1.002 1.002 0 0 1 1 15V1zm10 3V0l4 4h-4zM7 6v3H4v2h3v3h2v-3h3V9H9V6H7z"></path>
+                </svg>
+              </span>
+              <span class="c-nav-text">Generate a scenario</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
 
-        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
-          <%= content %>
-        </main>
-      </div>
+      <main>
+        <%= content %>
+      </main>
     </div>
+    <script src="/dev.js">
   </body>
 </html>
