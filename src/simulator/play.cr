@@ -1,20 +1,22 @@
 require "../local/*"
 require "../remote/*"
 require "../sync/*"
+require "./memfs"
 
 module Simulator
   class Play
     alias Event = NamedTuple(at: Int32, op: Operation)
 
-    alias Client = NamedTuple(local: Local::Store)
+    alias Client = NamedTuple(fs: MemFS, local: Local::Store)
 
     def initialize(@scenario : Scenario)
       @now = 0
       @events = [] of Event
       @clients = [] of Client
       @scenario.clients.each do |name|
+        fs = MemFS.new
         local = Local::Store.new
-        @clients << {local: local}
+        @clients << {fs: fs, local: local}
       end
     end
 
