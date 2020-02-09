@@ -23,7 +23,7 @@ docs:
 
 ## pretty: make the assets more prettier
 pretty:
-	@prettier --write --no-semi src/web/public/*
+	@prettier --write --no-semi src/web/public/*.{css,js}
 	@prettier --write --parser html src/web/views/*
 
 ## update-deps: update the shards dependencies
