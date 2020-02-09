@@ -61,8 +61,7 @@ You will need to [install Crystal](https://crystal-lang.org/install/) and run:
 ```sh
 $ git clone git@github.com:nono/cozy-desktop.cr.git
 $ cd cozy-desktop.cr
-$ shards install
-$ shards build
+$ make
 $ ./bin/cozy-desktop-ng --help
 ```
 
@@ -85,13 +84,8 @@ $ ls -alr ./tmp/Cozy
 
 ## Development
 
-Some useful commands:
-
-- `crystal spec` will run the unit tests
-- `crystal tool format --check` will check that the `.cr` files are correctly
-  formatted
-- `crystal docs` will build the documentation inside the `docs/` directory
-- `shards update` can be used to update the dependencies
+Some useful commands can be found in the Makefile. You can list them with `make
+help`.
 
 ## Contributing
 
