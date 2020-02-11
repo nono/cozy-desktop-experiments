@@ -73,7 +73,7 @@ module Simulator
       client = random_client
       path = new_path
       size = file_size
-      ms = 10 + Random.rand(size//1000)
+      ms = 10 + Random.rand(1 + size//1000)
       add CreateFile.new(client: client, path: path, size: size, ms: ms)
     end
 

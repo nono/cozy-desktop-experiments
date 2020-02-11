@@ -32,7 +32,7 @@ update-deps:
 
 ## tests: run the spec/tests
 tests:
-	@crystal spec
+	@crystal spec spec/unit
 
 ## web: start a web server for development
 web:
