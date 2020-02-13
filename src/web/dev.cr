@@ -29,7 +29,7 @@ module Web
     end
 
     def self.setup_router
-      get "/" do |env|
+      get "/" do
         my_render "index"
       end
 
@@ -41,7 +41,7 @@ module Web
         env.response.content_type = "application/json"
         nb_clients = env.params.json["nb_clients"].as(Int64)
         scenario = Simulator::Generate.new(nb_clients).run
-        # scenario.to_json
+        pp scenario.to_json
       end
 
       post "/play" do |env|
@@ -50,7 +50,7 @@ module Web
         play = Simulator::Play.new(scenario)
         play.run
         errors = play.check
-        # errors.to_json
+        pp errors.to_json
       end
 
       error 404 do

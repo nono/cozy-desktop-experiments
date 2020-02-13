@@ -13,7 +13,7 @@ module Simulator
       @now = 0
       @events = [] of Event
       @clients = [] of Client
-      @scenario.clients.each do |name|
+      @scenario.clients.each do
         fs = MemFS.new
         local = Local::Store.new
         @clients << {fs: fs, local: local}

@@ -9,7 +9,7 @@ module Local
 
     def initialize(@dir : String)
       @channel = Channel(Event).new(capacity: 1000)
-      @event = ->(event : Event) {}
+      @event = ->(_event : Event) {}
       @ready = ->{}
       @stopped = ->{}
     end

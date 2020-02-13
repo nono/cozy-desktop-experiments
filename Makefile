@@ -9,10 +9,6 @@ MAKEFLAGS += --no-builtin-rules
 build:
 	@shards build --release
 
-## check: check that .cr files are correctly formatted
-check:
-	@crystal tool format --check
-
 ## clean: clean the generated files and directories
 clean:
 	@rm -rf bin docs lib tmp
@@ -20,6 +16,11 @@ clean:
 ## docs: build the documentation
 docs:
 	@crystal docs
+
+## lint: enforces a consistent code style and detect code smells
+lint:
+	@crystal tool format --check
+	@bin/ameba
 
 ## pretty: make the assets more prettier
 pretty:

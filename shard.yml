@@ -22,3 +22,7 @@ dependencies:
     github: kemalcr/kemal
   timecop:
     github: waterlink/timecop.cr
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba

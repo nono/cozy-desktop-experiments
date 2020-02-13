@@ -15,7 +15,7 @@ module Remote
       end
     end
 
-    def createDirectory(dir_id, name, date)
+    def create_directory(dir_id, name, date)
       headers = HTTP::Headers{"Date" => date}
       path = "/files/#{dir_id}?Type=directory&Name=#{URI.encode name}"
       @client.post path, headers

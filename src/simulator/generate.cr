@@ -40,8 +40,8 @@ module Simulator
       action = ->{}
       choices.each do |choice|
         action = choice[1]
-        sum -= choice[0]
-        break if sum < 0
+        nb -= choice[0]
+        break if nb < 0
       end
       action.call
     end

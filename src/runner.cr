@@ -68,7 +68,7 @@ class Runner
   private def cancelled?
     timeout = after(Time::Span.new(nanoseconds: 100_000))
     received = Channel.receive_first(@chan, timeout)
-    return received == Message::Stop
+    received == Message::Stop
   end
 
   private def initialized
@@ -76,7 +76,7 @@ class Runner
       received = @chan.receive
       return false if received == Message::Stop
     end
-    return true
+    true
   end
 
   private def wait_for_stop

@@ -13,8 +13,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
-      run: shards install
+      run: make build
     - name: Run tests
-      run: crystal spec
-    - name: Check format
-      run: crystal tool format --check
+      run: make tests
+    - name: Run linter
+      run: make lint

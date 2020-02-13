@@ -5,11 +5,11 @@ require "./store"
 module Local
   extend self
 
-  Root = FilePath.new("/")
+  ROOT = FilePath.new("/")
 
   def analyze(store : Store, event : Start) : Array(Effect)
     store.scan_counter += 1
-    [Scan.new(path: Root)] of Effect
+    [Scan.new(path: ROOT)] of Effect
   end
 
   def analyze(store : Store, event : Stop) : Array(Effect)
