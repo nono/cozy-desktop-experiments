@@ -5,9 +5,8 @@ require "./memfs"
 
 module Simulator
   class Play
-    alias Event = NamedTuple(at: Int32, op: Operation)
-
-    alias Client = NamedTuple(fs: MemFS, local: Local::Store)
+    record Event, at : Int32, op : Operation
+    record Client, fs : MemFS, local : Local::Store
 
     def initialize(@scenario : Scenario)
       @now = 0
@@ -16,7 +15,7 @@ module Simulator
       @scenario.clients.each do
         fs = MemFS.new
         local = Local::Store.new
-        @clients << {fs: fs, local: local}
+        @clients << Client.new(fs: fs, local: local)
       end
     end
 

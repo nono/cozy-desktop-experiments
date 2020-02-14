@@ -37,9 +37,9 @@ module Local
 
   def analyze(store : Store, event : FileEvent) : Array(Effect)
     effects = [] of Effect
-    if event[:type] == File::Type::Directory
+    if event.type == File::Type::Directory
       store.scan_counter += 1
-      effects << Scan.new(path: event[:path])
+      effects << Scan.new(path: event.path)
     end
     effects
   end

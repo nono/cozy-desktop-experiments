@@ -13,6 +13,10 @@ build:
 clean:
 	@rm -rf bin docs lib tmp
 
+## compile: compile with the full error trace
+compile:
+	@crystal build --error-trace ./src/cli.cr -o bin/cozy-desktop-ng
+
 ## docs: build the documentation
 docs:
 	@crystal docs
@@ -44,4 +48,4 @@ help:
 	@echo "Usage: \n"
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
 
-.PHONY: build check clean docs pretty update-deps tests web help
+.PHONY: build check clean compile docs lint pretty update-deps tests web help

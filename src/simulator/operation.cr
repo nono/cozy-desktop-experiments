@@ -4,6 +4,8 @@ module Simulator
   abstract class Operation
     include JSON::Serializable
 
+    # TODO: try to avoid this hard-coded map of types by playing with the hooks
+    # https://crystal-lang.org/reference/syntax_and_semantics/macros/hooks.html
     use_json_discriminator "type", {
       start_client: StartClient,
       stop_client:  StopClient,
@@ -27,6 +29,7 @@ module Simulator
     end
   end
 
+  # TODO: can we use record here?
   # client is the index in the clients list of the scenario
   class StartClient < Operation
     JSON.mapping(

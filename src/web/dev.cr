@@ -1,3 +1,4 @@
+# TODO: try [spider-gazelle](https://spider-gazelle.net/#/README) instead of kemal
 require "kemal"
 require "../simulator/*"
 
