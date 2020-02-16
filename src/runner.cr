@@ -66,9 +66,12 @@ class Runner
   end
 
   private def cancelled?
-    timeout = after(Time::Span.new(nanoseconds: 100_000))
-    received = Channel.receive_first(@chan, timeout)
-    received == Message::Stop
+    select
+    when received = @chan.receive
+      received == Message::Stop
+    when timeout(100_000.nanoseconds)
+      false
+    end
   end
 
   private def initialized
@@ -110,15 +113,5 @@ class Runner
   # cannot restart. It is useful when the client wants to exit.
   def wait_final_stop
     @can_start.lock
-  end
-
-  # TODO: find another place to put this method
-  private def after(time : Time::Span)
-    channel = Channel(Nil).new(1)
-    spawn do
-      sleep time
-      channel.send nil
-    end
-    channel
   end
 end

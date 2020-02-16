@@ -22,7 +22,7 @@ class ComponentMock
 
   def start
     @mutex.synchronize do
-      raise "Cannot start from #{@state}" unless [:initial, :stopped].includes? @state
+      raise "Cannot start from #{@state}" unless @state.in?(:initial, :stopped)
       @state = :starting
     end
     nano = Random.rand 1_000_000
@@ -39,7 +39,7 @@ class ComponentMock
 
   def stop
     @mutex.synchronize do
-      raise "Cannot start from #{@state}" unless [:starting, :ready].includes? @state
+      raise "Cannot stop from #{@state}" unless @state.in?(:starting, :ready)
       @state = :stopped
     end
     @stopped.call
