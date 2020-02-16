@@ -2,13 +2,14 @@
 require "kemal"
 require "../simulator/*"
 
+# :nodoc:
 macro my_render(filename)
   render "src/web/views/#{{{filename}}}.ecr", "src/web/views/layout.ecr"
 end
 
 module Web
   module Dev
-    # XXX We can't use Kemal.run {|cfg| ... } as yield config is called after
+    # NOTE: We can't use Kemal.run {|cfg| ... } as yield config is called after
     # config.setup, which means that options like public_folder are ignored.
     def self.run
       config = setup_config

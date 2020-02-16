@@ -14,6 +14,8 @@ users:
 
 - Add support of Windows and macOS
 - add UI
+- add online/offline status
+- manage dates and executable for files
 - improve the code to make it more robust
 - add logs and a way to contact the support team
 - use sentry to report errors

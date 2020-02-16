@@ -68,6 +68,8 @@ module Simulator
   end
 
   # ms is the time taken to scan this directory
+  # TODO: should we have a field to tell the latency between creating the
+  # directory and the inotify event?
   class CreateDir < Operation
     JSON.mapping(
       type: String,
@@ -83,6 +85,8 @@ module Simulator
   end
 
   # ms is the tuime taken to read the file (e.g. for checksum)
+  # TODO: should we have a field to tell the latency between creating the
+  # file and the inotify event?
   class CreateFile < Operation
     JSON.mapping(
       type: String,
@@ -98,5 +102,5 @@ module Simulator
     end
   end
 
-  # TODO: add more operations like ToggleNetwork
+  # TODO: add more operations like ExcelSave, ToggleNetwork, SelectiveSyncChange
 end

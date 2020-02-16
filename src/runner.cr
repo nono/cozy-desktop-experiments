@@ -18,6 +18,7 @@ require "./interfaces/component"
 # - _bonus_ if the runner know that a run should be stopped, it can avoid
 #   starting the components and stopping them just after.
 class Runner
+  # :nodoc:
   enum Message
     Ready
     Stop
@@ -100,10 +101,10 @@ class Runner
   # restarts happen in a short time. So, it is probably better to make the
   # restarts in their own fiber:
   #
-  #    spawn do
-  #      runner.stop
-  #      runner.run
-  #    end
+  #     spawn do
+  #       runner.stop
+  #       runner.run
+  #     end
   def stop
     @can_stop.receive
     @chan.send Message::Stop

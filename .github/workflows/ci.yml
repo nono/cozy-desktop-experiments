@@ -1,18 +1,13 @@
-name: Crystal CI
-
+name: CI
 on: [push]
-
 jobs:
-  build:
-
+  ci:
     runs-on: ubuntu-latest
-
     container:
       image: crystallang/crystal
-
     steps:
     - uses: actions/checkout@v1
-    - name: Install dependencies
+    - name: Check that it compiles
       run: make build
     - name: Run tests
       run: make tests

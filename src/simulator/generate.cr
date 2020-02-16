@@ -27,6 +27,9 @@ module Simulator
       end
     end
 
+    # TODO: find a way to generate operations for files in conflict (we don't
+    # known their name/path when generating the scenario, so, we should
+    # probably use something like a number to identify them).
     def run_ops
       # TODO: implement this method
     end
