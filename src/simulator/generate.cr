@@ -3,12 +3,16 @@ require "./scenario"
 
 module Simulator
   class Generate
+    SPECIAL_CHARS = [':', '-', 'é', ' ', '%', ',', '&', '@', 'É', 'Ç']
+
     property scenario : Scenario
 
     # TODO: we should add an option for the set of operations and their
     # frequencies
     def initialize(nb_clients, *, @nb_init_ops = 16, @nb_run_ops = 64)
       @scenario = Scenario.new(nb_clients)
+      @known_paths = [] of String
+      @deleted_paths = [] of String
     end
 
     def run
@@ -31,7 +35,22 @@ module Simulator
     # known their name/path when generating the scenario, so, we should
     # probably use something like a number to identify them).
     def run_ops
-      # TODO: implement this method
+      Random.rand(@nb_run_ops).times do
+        freq [
+          {5, ->create_dir},
+          {3, ->create_file},
+          {1, ->recreate_deleted_dir},
+          {1, ->recreate_deleted_file},
+          {1, ->update_file},
+          {2, ->move_to_new_path},
+          {3, ->move_to_deleted_path},
+          # TODO: add outside operations
+          # {1, ->move_to_outside},
+          # {1, ->move_from_outside},
+          {5, ->remove},
+          {2, ->sleep},
+        ]
+      end
     end
 
     def freq(choices)
@@ -49,6 +68,8 @@ module Simulator
       action.call
     end
 
+    # Operations
+
     def start_client(index)
       sleep
       add StartClient.new(client: index)
@@ -65,29 +86,87 @@ module Simulator
       add Sleep.new(ms: ms)
     end
 
+    def create_file
+      write_file new_path
+    end
+
     def create_dir
+      create_directory new_path
+    end
+
+    def recreate_deleted_dir
+      create_directory deleted_path
+    end
+
+    def recreate_deleted_file
+      write_file deleted_path
+    end
+
+    def update_file
+      write_file known_path
+    end
+
+    def create_directory(path)
       client = random_client
-      path = new_path
       ms = 4 + Random.rand 16
       add CreateDir.new(client: client, path: path, ms: ms)
     end
 
-    def create_file
+    def write_file(path)
       client = random_client
-      path = new_path
       size = file_size
       ms = 10 + Random.rand(1 + size//1000)
-      add CreateFile.new(client: client, path: path, size: size, ms: ms)
+      add WriteFile.new(client: client, path: path, size: size, ms: ms)
     end
+
+    def move_to_new_path
+      from = known_path
+      to = new_path
+      move from, to
+    end
+
+    def move_to_deleted_path
+      from = known_path
+      to = deleted_path
+      move from, to
+    end
+
+    def move(from, to)
+      @deleted_paths << from
+      client = random_client
+      add Move.new(client: client, from: from, to: to)
+    end
+
+    def remove
+      client = random_client
+      path = known_path
+      add Remove.new(client: client, path: path)
+    end
+
+    # Low-level helpers
 
     private def random_client
       return 0 if @scenario.clients.size == 1
       Random.rand @scenario.clients.size
     end
 
+    private def known_path
+      return new_path if @known_paths.empty?
+      @known_paths.sample
+    end
+
+    private def deleted_path
+      return new_path if @deleted_paths.empty?
+      @deleted_paths.sample
+    end
+
     private def new_path
       # TODO: improve it
-      Faker::Name.first_name
+      p = Faker::Name.first_name
+      p = SPECIAL_CHARS.sample + p if Random.rand(4).zero?
+      p = @known_paths.sample + "/" + p unless @known_paths.empty? || Random.rand(3).zero?
+      @known_paths << p
+      p
     end
 
     private def file_size

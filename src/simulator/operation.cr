@@ -11,7 +11,9 @@ module Simulator
       stop_client:  StopClient,
       sleep:        Sleep,
       create_dir:   CreateDir,
-      create_file:  CreateFile,
+      write_file:   WriteFile,
+      move:         Move,
+      remove:       Remove,
     }
 
     property type : String
@@ -87,7 +89,7 @@ module Simulator
   # ms is the tuime taken to read the file (e.g. for checksum)
   # TODO: should we have a field to tell the latency between creating the
   # file and the inotify event?
-  class CreateFile < Operation
+  class WriteFile < Operation
     JSON.mapping(
       type: String,
       client: Int32,
@@ -96,9 +98,36 @@ module Simulator
       ms: Int32
     )
 
-    @type = "create_file"
+    @type = "write_file"
 
     def initialize(*, @client, @path, @size, @ms)
+    end
+  end
+
+  class Move < Operation
+    JSON.mapping(
+      type: String,
+      client: Int32,
+      from: String,
+      to: String
+    )
+
+    @type = "move"
+
+    def initialize(*, @client, @from, @to)
+    end
+  end
+
+  class Remove < Operation
+    JSON.mapping(
+      type: String,
+      client: Int32,
+      path: String
+    )
+
+    @type = "remove"
+
+    def initialize(*, @client, @path)
     end
   end
 
