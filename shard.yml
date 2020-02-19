@@ -17,9 +17,10 @@ dependencies:
     github: askn/faker
   inotify:
     github: petoem/inotify.cr
-    version: 1.0.1
   kemal:
     github: kemalcr/kemal
+  sqlite3:
+    github: crystal-lang/crystal-sqlite3
   timecop:
     github: waterlink/timecop.cr
 

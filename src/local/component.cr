@@ -27,8 +27,9 @@ module Local
     end
 
     def start
-      store = Store.new
       watcher = Watcher.start(@dir, @channel)
+      store = Store.new
+      store.setup
 
       loop do
         event = @channel.receive
@@ -42,6 +43,10 @@ module Local
     rescue Channel::ClosedError
       # We are done
       @stopped.call
+    ensure
+      if s = store
+        s.close
+      end
     end
 
     def stop
