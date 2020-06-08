@@ -1,0 +1,151 @@
+/* The variables for colors are taken from cozy-ui */
+:root {
+  --white: #fff;
+  --paleGrey: #f5f6f7;
+  --silver: #d6d8da;
+  --coolGrey: #95999d;
+  --slateGrey: #5d6165;
+  --charcoalGrey: #32363f;
+  --black: #000;
+  --zircon: #f5faff;
+  --hawkesBlue: #eef5fe;
+  --frenchPass: #c2dcff;
+  --azure: #1fa8f1;
+  --dodgerBlue: #297ef2;
+  --scienceBlue: #0b61d6;
+  --puertoRico: #0dcbcf;
+  --grannyApple: #def7e7;
+  --weirdGreen: #40de8e;
+  --emerald: #35ce68;
+  --malachite: #08b442;
+  --seafoamGreen: #3da67e;
+  --brightSun: #ffc644;
+  --texasRose: #ffae5f;
+  --mango: #ff962f;
+  --pumpkinOrange: #ff7f1b;
+  --blazeOrange: #fc6d00;
+  --melon: #fd7461;
+  --chablis: #fff2f2;
+  --yourPink: #fdcbcb;
+  --fushsia: #fc4c83;
+  --pomegranate: #f52d2d;
+  --monza: #dd0505;
+  --lavender: #c2adf4;
+  --darkPeriwinkle: #6984ce;
+  --purpley: #7f6bee;
+  --portage: #9169f2;
+  --lightishPurple: #b449e7;
+}
+
+/* Use lato if available, as it is the prefered font for Cozy */
+body {
+  font-family: Lato, sans-serif;
+}
+
+html,
+body {
+  background-color: var(--white);
+  color: var(--black);
+}
+
+/* https://css-tricks.com/box-sizing/ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.icon {
+  display: inline-block;
+  color: var(--coolGrey);
+  fill: currentColor;
+}
+.is-active .icon {
+  color: var(--dodgerBlue);
+}
+.icon svg {
+  display: block;
+}
+:hover > .icon {
+  color: var(--charcoalGrey);
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  align-content: flex-start;
+  height: 3rem;
+  border-bottom: 1px solid var(--silver);
+  color: var(--dodgerBlue);
+}
+.navbar .icon {
+  margin: 1rem;
+  color: var(--dodgerBlue);
+}
+.navbar h1 {
+  font-size: 1.2rem;
+}
+.navbar a {
+  color: var(--black);
+  text-decoration: none;
+}
+
+[role="application"] {
+  display: flex;
+  height: calc(100vh - 3rem);
+}
+main {
+  flex: 1;
+  padding: 1.5rem;
+}
+
+.sidebar {
+  width: 13.75rem;
+  background-color: var(--paleGrey);
+}
+.sidebar ul {
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+.sidebar li {
+  position: relative;
+  z-index: 0;
+  height: 3rem;
+}
+.sidebar li:hover::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  right: 1rem;
+  bottom: 0;
+  border-radius: 0 0.2rem 0.2rem 0;
+  background: var(--silver);
+}
+.sidebar a {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 1rem 0 1.5rem;
+  line-height: 1.5;
+  text-decoration: none;
+  color: var(--slateGrey);
+}
+.sidebar a:visited {
+  color: var(--slateGrey);
+}
+.sidebar a:hover {
+  color: var(--charcoalGrey);
+}
+.sidebar a.is-active {
+  box-shadow: inset 0.25rem 0 0 0 var(--dodgerBlue);
+  font-weight: bold;
+}
+.sidebar a .icon {
+  margin-right: 0.7rem;
+}
+.sidebar a.is-active .icon {
+  color: var(--dodgerBlue);
+}
