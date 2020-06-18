@@ -13,6 +13,7 @@ using:
 - [BuckleScript](https://bucklescript.github.io/) as the build tool
 - [Belt](https://reasonml.org/apis/javascript/latest/belt) for the stdlib
 - [Yarn v1](https://classic.yarnpkg.com/lang/en/) for managing the dependencies
+- [Jest](https://jestjs.io/) to run tests
 
 You can look at the `scripts` section of the `package.json` to see the useful
 commands for developers.
