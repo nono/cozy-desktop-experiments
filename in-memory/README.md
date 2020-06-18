@@ -1,24 +1,18 @@
-# Basic Reason Template
+# In memory experiment for Cozy desktop
 
-Hello! This project allows you to quickly get started with Reason and BuckleScript. If you wanted a more sophisticated version, try the `react` template (`bsb -theme react -init .`).
+This is an experiment for [Cozy desktop](https://github.com/cozy-labs/cozy-desktop)
+where the data is kept in memory (no sqlite/pouchdb). It makes it easier to
+test algorithms to synchronize files and directories between the local file
+system and the remote Cozy instance. In particular, it is a good way to play
+with property based testing and start building a simulator.
 
-# Build
+I wanted static typing and it looks like OCaml could be a good fit here. I'm
+using:
 
-```bash
-# for yarn
-yarn build
+- [Reason](https://reasonml.org/) for the syntax
+- [BuckleScript](https://bucklescript.github.io/) as the build tool
+- [Belt](https://reasonml.org/apis/javascript/latest/belt) for the stdlib
+- [Yarn v1](https://classic.yarnpkg.com/lang/en/) for managing the dependencies
 
-# for npm
-npm run build
-```
-
-# Build + Watch
-
-```bash
-# for yarn
-yarn start
-
-# for npm
-npm run start
-```
-
+You can look at the `scripts` section of the `package.json` to see the useful
+commands for developers.
