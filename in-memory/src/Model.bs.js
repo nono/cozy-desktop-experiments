@@ -3,10 +3,6 @@
 
 
 function init(config) {
-  console.log(/* tuple */[
-        "init",
-        config
-      ]);
   return {
           cozyURL: config.cozyURL,
           ticked: 0
@@ -14,11 +10,6 @@ function init(config) {
 }
 
 function update(current, $$event) {
-  console.log(/* tuple */[
-        "update",
-        current,
-        $$event
-      ]);
   var next = $$event ? ({
         cozyURL: current.cozyURL,
         ticked: current.ticked + 1 | 0

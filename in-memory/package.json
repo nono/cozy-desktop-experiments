@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "scripts": {
     "build": "bsb -make-world",
-    "start": "bsb -make-world -w",
+    "build:w": "bsb -make-world -w",
     "format": "bsrefmt --in-place src/*.re __tests__/*.re",
     "test": "jest",
+    "test:w": "jest --watch",
     "clean": "bsb -clean-world"
   },
   "keywords": ["BuckleScript"],

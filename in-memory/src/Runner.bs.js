@@ -18,10 +18,6 @@ function run(config) {
   };
   return setInterval((function (param) {
                 var $$event = /* Tick */1;
-                console.log(/* tuple */[
-                      "process",
-                      $$event
-                    ]);
                 var match = Model$InMemory.update(model.contents, $$event);
                 model.contents = match[0];
                 return apply(match[1]);

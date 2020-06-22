@@ -1,17 +1,17 @@
 type configuration = {cozyURL: string};
 
+type ticks = int;
+
 type model = {
   cozyURL: string,
-  ticked: int,
+  ticked: ticks,
 };
 
 let init = (config: configuration): model => {
-  Js.log(("init", config));
   {cozyURL: config.cozyURL, ticked: 0};
 };
 
 let update = (current: model, event: Event.event): (model, unit) => {
-  Js.log(("update", current, event));
   let next =
     switch (event) {
     | Tick => {...current, ticked: current.ticked + 1}
