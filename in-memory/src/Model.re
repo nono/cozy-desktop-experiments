@@ -16,16 +16,22 @@ type changesFeedState =
   | ChangesFeedCurrentlyFetching
   | ChangesFeedLastFetchedAt(ticks);
 
-type model = {
+type states = {changes: changesFeedState};
+
+type t = {
   config: configuration,
   ticked: ticks,
-  changesState: changesFeedState,
+  states,
+  remote: Remote.tree,
 };
 
-let init = (config: configuration): model => {
+let init = (config: configuration): t => {
   {
-    config: config,
+    config,
     ticked: 0,
-    changesState: ChangesFeedNeverFetched,
+    states: {
+      changes: ChangesFeedNeverFetched,
+    },
+    remote: Remote.emptyTree,
   };
 };

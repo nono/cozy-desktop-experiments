@@ -1,1 +1,1 @@
-let update: (Model.model, Model.event) => (Model.model, Model.effects)
+let update: (Model.t, Model.event) => (Model.t, Model.effects)

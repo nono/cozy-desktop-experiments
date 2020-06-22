@@ -1,29 +1,35 @@
 open Model;
 
-type handler = model => (model, effects);
+type handler = t => (t, effects);
 
 let incrementTicked: handler =
   current => {
     ({...current, ticked: current.ticked + 1}, []);
   };
 
+// TODO: fetches again the changes feed after some time
 let checkFetchChanges: handler =
-  current => {
-    switch (current.changesState) {
+  model => {
+    switch (model.states.changes) {
     | ChangesFeedNeverFetched => (
-        {...current, changesState: ChangesFeedCurrentlyFetching},
+        {
+          ...model,
+          states: {
+            changes: ChangesFeedCurrentlyFetching,
+          },
+        },
         [FetchChangesFeed],
       )
-    | _ => (current, [])
+    | _ => (model, [])
     };
   };
 
 let combineHandlers = (handlers: list(handler)): handler => {
-  let rec aux = (handlers: list(handler), current: model, acc: effects) => {
+  let rec aux = (handlers: list(handler), model: t, acc: effects) => {
     switch (handlers) {
-    | [] => (current, acc)
+    | [] => (model, acc)
     | [handler, ...rest] =>
-      let (next, effects) = handler(current);
+      let (next, effects) = handler(model);
       aux(rest, next, List.concat(acc, effects));
     };
   };
@@ -32,9 +38,9 @@ let combineHandlers = (handlers: list(handler)): handler => {
 
 let handleTick = combineHandlers([incrementTicked, checkFetchChanges]);
 
-let update = (current: model, event: event): (model, effects) => {
+let update = (model: t, event: event): (t, effects) => {
   switch (event) {
-  | Tick => handleTick(current)
-  | _ => (current, [])
+  | Tick => handleTick(model)
+  | _ => (model, [])
   };
 };

@@ -4,10 +4,10 @@ describe("Sync", () => {
   Expect.(
     describe("update", () => {
       test("tick", () => {
-        let (next, _) =
+        let (updated, _) =
           Model.init({cozyURL: "http://cozy.tools:8080/"})
           ->Sync.update(Model.Tick);
-        expect(next.ticked) |> toBe(1);
+        expect(updated.ticked) |> toBe(1);
       })
     })
   )

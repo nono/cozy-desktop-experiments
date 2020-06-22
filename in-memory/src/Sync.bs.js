@@ -9,20 +9,24 @@ function incrementTicked(current) {
           {
             config: current.config,
             ticked: current.ticked + 1 | 0,
-            changesState: current.changesState
+            states: current.states,
+            remote: current.remote
           },
           /* [] */0
         ];
 }
 
-function checkFetchChanges(current) {
-  var match = current.changesState;
+function checkFetchChanges(model) {
+  var match = model.states.changes;
   if (typeof match === "number" && match === 0) {
     return /* tuple */[
             {
-              config: current.config,
-              ticked: current.ticked,
-              changesState: /* ChangesFeedCurrentlyFetching */1
+              config: model.config,
+              ticked: model.ticked,
+              states: {
+                changes: /* ChangesFeedCurrentlyFetching */1
+              },
+              remote: model.remote
             },
             /* :: */[
               /* FetchChangesFeed */0,
@@ -31,7 +35,7 @@ function checkFetchChanges(current) {
           ];
   } else {
     return /* tuple */[
-            current,
+            model,
             /* [] */0
           ];
   }
@@ -40,21 +44,21 @@ function checkFetchChanges(current) {
 function combineHandlers(handlers) {
   return (function (model) {
       var _handlers = handlers;
-      var _current = model;
+      var _model = model;
       var _acc = /* [] */0;
       while(true) {
         var acc = _acc;
-        var current = _current;
+        var model$1 = _model;
         var handlers$1 = _handlers;
         if (!handlers$1) {
           return /* tuple */[
-                  current,
+                  model$1,
                   acc
                 ];
         }
-        var match = Curry._1(handlers$1[0], current);
+        var match = Curry._1(handlers$1[0], model$1);
         _acc = Belt_List.concat(acc, match[1]);
-        _current = match[0];
+        _model = match[0];
         _handlers = handlers$1[1];
         continue ;
       };
@@ -69,14 +73,14 @@ var handleTick = combineHandlers(/* :: */[
       ]
     ]);
 
-function update(current, $$event) {
+function update(model, $$event) {
   if ($$event) {
     return /* tuple */[
-            current,
+            model,
             /* [] */0
           ];
   } else {
-    return Curry._1(handleTick, current);
+    return Curry._1(handleTick, model);
   }
 }
 
