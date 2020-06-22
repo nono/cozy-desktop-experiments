@@ -17,7 +17,7 @@ function run(config) {
     contents: initial
   };
   return setInterval((function (param) {
-                var $$event = /* Tick */1;
+                var $$event = /* Tick */0;
                 var match = Model$InMemory.update(model.contents, $$event);
                 model.contents = match[0];
                 return apply(match[1]);
@@ -26,4 +26,4 @@ function run(config) {
 
 exports.apply = apply;
 exports.run = run;
-/* No side effect */
+/* Model-InMemory Not a pure module */

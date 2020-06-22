@@ -9,7 +9,7 @@ Jest.describe("model", (function (param) {
                       return Jest.test("tick", (function (param) {
                                     var match = Model$InMemory.update(Model$InMemory.init({
                                               cozyURL: "http://cozy.tools:8080/"
-                                            }), /* Tick */1);
+                                            }), /* Tick */0);
                                     return Jest.Expect.toBe(1, Jest.Expect.expect(match[0].ticked));
                                   }));
                     }));
