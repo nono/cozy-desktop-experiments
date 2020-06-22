@@ -4,7 +4,7 @@ let run = (config: Model.configuration) => {
   let initial = Model.init(config);
   let model = ref(initial);
   let process = (event: Model.event) => {
-    let (next, effects) = Model.update(model^, event);
+    let (next, effects) = Sync.update(model^, event);
     model := next;
     apply(effects);
   };

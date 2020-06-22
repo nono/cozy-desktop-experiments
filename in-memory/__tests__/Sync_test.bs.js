@@ -2,12 +2,13 @@
 'use strict';
 
 var Jest = require("@glennsl/bs-jest/src/jest.js");
+var Sync$InMemory = require("../src/Sync.bs.js");
 var Model$InMemory = require("../src/Model.bs.js");
 
-Jest.describe("model", (function (param) {
+Jest.describe("Sync", (function (param) {
         return Jest.describe("update", (function (param) {
                       return Jest.test("tick", (function (param) {
-                                    var match = Model$InMemory.update(Model$InMemory.init({
+                                    var match = Sync$InMemory.update(Model$InMemory.init({
                                               cozyURL: "http://cozy.tools:8080/"
                                             }), /* Tick */0);
                                     return Jest.Expect.toBe(1, Jest.Expect.expect(match[0].ticked));
