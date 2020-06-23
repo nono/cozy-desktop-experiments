@@ -15,4 +15,4 @@ function init(config) {
 }
 
 exports.init = init;
-/* No side effect */
+/* Remote-InMemory Not a pure module */

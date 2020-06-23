@@ -6,6 +6,8 @@ test algorithms to synchronize files and directories between the local file
 system and the remote Cozy instance. In particular, it is a good way to play
 with property based testing and start building a simulator.
 
+## Tooling
+
 I wanted static typing and it looks like OCaml could be a good fit here. I'm
 using:
 
@@ -29,3 +31,4 @@ is runned at each file change).
 - recursive functions can often be written in a style that allows tail-call optimisation, with an embedded function called by convention `rec` which uses an accumulator called `acc` (also by convention)
 - `open` can be used to refer to a content to a module without prefixing it: it is convenient but should be used sparingly as it makes harder to know where some values come from
 - don't forget the `;` and the trailing `,`
+- file names must be unique per project (no `src/Remote.re` and `src/Fake/Remote.re`)

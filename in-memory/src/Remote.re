@@ -1,19 +1,27 @@
-type id = string;
-
-type node = {
-  id,
+type dir = {
+  id: Tree.id,
+  parentID: Tree.id,
   name: string,
-  parentID: id,
+  rev: string,
 };
 
-type tree = Tree.t(node);
+type extra = {rev: string};
 
-type change = node;
+type tree = Tree.t(extra);
 
-type changes =
-  | List(change);
+type changes = list(dir);
 
-let emptyTree: tree = {
-  rootID: "io.cozy.files.root-dir",
-  nodes: Map.String.empty,
+let rootID = "io.cozy.files.root-dir";
+
+let emptyTree: tree = Tree.init(rootID);
+
+let dirToNode = (dir: dir): Tree.node(extra) => {
+  {
+    id: dir.id,
+    parentID: dir.parentID,
+    name: dir.name,
+    extra: {
+      rev: dir.rev,
+    },
+  };
 };
