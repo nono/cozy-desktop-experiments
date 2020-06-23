@@ -3,7 +3,7 @@ type id = string;
 type node = {
   id,
   name: string,
-  parentID: string,
+  parentID: id,
 };
 
 type tree = Tree.t(node);

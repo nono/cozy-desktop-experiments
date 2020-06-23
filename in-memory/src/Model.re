@@ -7,7 +7,7 @@ type event =
   | Tick
   | ReceiveChangesFeed(Remote.changes);
 
-type configuration = {cozyURL: string};
+type config = {cozyURL: string};
 
 type ticks = int;
 
@@ -19,13 +19,13 @@ type changesFeedState =
 type states = {changes: changesFeedState};
 
 type t = {
-  config: configuration,
+  config,
   ticked: ticks,
   states,
   remote: Remote.tree,
 };
 
-let init = (config: configuration): t => {
+let init = (config: config): t => {
   {
     config,
     ticked: 0,

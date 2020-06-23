@@ -16,4 +16,16 @@ using:
 - [Jest](https://jestjs.io/) to run tests
 
 You can look at the `scripts` section of the `package.json` to see the useful
-commands for developers.
+commands for developers (the `:w` suffix is used for watch mode, when the task
+is runned at each file change).
+
+## OCaml/Reason notes
+
+- 1 file == 1 module (but it is possible to create sub-module inside a file)
+- by default, all the `let`s in a module are exported, but an interface file (`.rei`) can restrict that
+- it is a good practice to put the signature for exported functions
+- the main type of a module is often called `t` (like `Map.String.t`)
+- `ref` can be used for a mutable reference, ie a variable which can changes its value
+- recursive functions can often be written in a style that allows tail-call optimisation, with an embedded function called by convention `rec` which uses an accumulator called `acc` (also by convention)
+- `open` can be used to refer to a content to a module without prefixing it: it is convenient but should be used sparingly as it makes harder to know where some values come from
+- don't forget the `;` and the trailing `,`

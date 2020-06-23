@@ -1,6 +1,6 @@
 let apply = (effects: Model.effects) => Js.log(("apply", effects));
 
-let run = (config: Model.configuration) => {
+let run = (config: Model.config) => {
   let initial = Model.init(config);
   let model = ref(initial);
   let process = (event: Model.event) => {
