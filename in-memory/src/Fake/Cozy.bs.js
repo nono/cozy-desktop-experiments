@@ -6,11 +6,11 @@ var Remote$InMemory = require("../Remote.bs.js");
 
 function addDir(cozy, dir) {
   var tree = Tree$InMemory.addNode(cozy.tree, Remote$InMemory.dirToNode(dir));
-  var changes_001 = cozy.changes;
-  var changes = /* :: */[
-    dir,
-    changes_001
-  ];
+  var changes_1 = cozy.changes;
+  var changes = {
+    hd: dir,
+    tl: changes_1
+  };
   return {
           tree: tree,
           changes: changes

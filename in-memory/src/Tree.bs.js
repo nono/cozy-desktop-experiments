@@ -12,7 +12,7 @@ function init(rootID) {
 
 function addNode(tree, node) {
   var id = node.id;
-  var nodes = Belt_MapString.set(tree.nodes, id[0], node);
+  var nodes = Belt_MapString.set(tree.nodes, id._0, node);
   return {
           rootID: tree.rootID,
           nodes: nodes

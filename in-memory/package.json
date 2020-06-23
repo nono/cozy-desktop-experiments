@@ -9,12 +9,14 @@
     "test:w": "jest --watch",
     "clean": "bsb -clean-world"
   },
-  "keywords": ["BuckleScript"],
+  "keywords": [
+    "BuckleScript"
+  ],
   "author": "Bruno Michel",
   "license": "MIT",
   "devDependencies": {
     "@glennsl/bs-jest": "0.5.1",
-    "bs-platform": "^7.3.2"
+    "bs-platform": "8.0.1"
   },
   "jest": {
     "testEnvironment": "node"

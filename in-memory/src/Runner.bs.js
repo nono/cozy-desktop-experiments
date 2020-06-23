@@ -5,7 +5,7 @@ var Sync$InMemory = require("./Sync.bs.js");
 var Model$InMemory = require("./Model.bs.js");
 
 function apply(effects) {
-  console.log(/* tuple */[
+  console.log([
         "apply",
         effects
       ]);

@@ -5,7 +5,7 @@ var Curry = require("bs-platform/lib/js/curry.js");
 var Belt_List = require("bs-platform/lib/js/belt_List.js");
 
 function incrementTicked(current) {
-  return /* tuple */[
+  return [
           {
             config: current.config,
             ticked: current.ticked + 1 | 0,
@@ -19,7 +19,7 @@ function incrementTicked(current) {
 function checkFetchChanges(model) {
   var match = model.states.changes;
   if (typeof match === "number" && match === 0) {
-    return /* tuple */[
+    return [
             {
               config: model.config,
               ticked: model.ticked,
@@ -28,13 +28,13 @@ function checkFetchChanges(model) {
               },
               remote: model.remote
             },
-            /* :: */[
-              /* FetchChangesFeed */0,
-              /* [] */0
-            ]
+            {
+              hd: /* FetchChangesFeed */0,
+              tl: /* [] */0
+            }
           ];
   } else {
-    return /* tuple */[
+    return [
             model,
             /* [] */0
           ];
@@ -42,40 +42,40 @@ function checkFetchChanges(model) {
 }
 
 function combineHandlers(handlers) {
-  return (function (model) {
-      var _handlers = handlers;
-      var _model = model;
-      var _acc = /* [] */0;
-      while(true) {
-        var acc = _acc;
-        var model$1 = _model;
-        var handlers$1 = _handlers;
-        if (!handlers$1) {
-          return /* tuple */[
-                  model$1,
-                  acc
-                ];
-        }
-        var match = Curry._1(handlers$1[0], model$1);
-        _acc = Belt_List.concat(acc, match[1]);
-        _model = match[0];
-        _handlers = handlers$1[1];
-        continue ;
-      };
-    });
+  return function (model) {
+    var _handlers = handlers;
+    var _model = model;
+    var _acc = /* [] */0;
+    while(true) {
+      var acc = _acc;
+      var model$1 = _model;
+      var handlers$1 = _handlers;
+      if (!handlers$1) {
+        return [
+                model$1,
+                acc
+              ];
+      }
+      var match = Curry._1(handlers$1.hd, model$1);
+      _acc = Belt_List.concat(acc, match[1]);
+      _model = match[0];
+      _handlers = handlers$1.tl;
+      continue ;
+    };
+  };
 }
 
-var handleTick = combineHandlers(/* :: */[
-      incrementTicked,
-      /* :: */[
-        checkFetchChanges,
-        /* [] */0
-      ]
-    ]);
+var handleTick = combineHandlers({
+      hd: incrementTicked,
+      tl: {
+        hd: checkFetchChanges,
+        tl: /* [] */0
+      }
+    });
 
 function update(model, $$event) {
   if ($$event) {
-    return /* tuple */[
+    return [
             model,
             /* [] */0
           ];
