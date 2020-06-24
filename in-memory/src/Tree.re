@@ -17,6 +17,7 @@ let init = (rootID: string): t('a) => {
   {rootID, nodes: Map.String.empty};
 };
 
+// TODO use a result for the return type
 // TODO check that we don't already have a node with the same id
 // TODO check that we don't already have a node with the same parentID+name
 let addNode = (tree: t('a), node: node('a)): t('a) => {
