@@ -3,8 +3,11 @@
 
 open Jest;
 
-describe("Tree", () => {
-  let buildTree = (ids: array(string)): Tree.t(string) => {
+module BasicTree = {
+  type t = Tree.t(string);
+  let rootID = "root-dir";
+
+  let fromArray = (ids: array(string)): t => {
     let rec aux = (acc, ids) => {
       switch (ids) {
       | [] => acc
@@ -23,13 +26,16 @@ describe("Tree", () => {
         )
       };
     };
-    aux(Tree.init("root-dir"), List.fromArray(ids));
+    aux(Tree.init(rootID), List.fromArray(ids));
   };
+};
 
+describe("Tree", () => {
   test("addNode", () => {
     let checkAddNodes = ids => {
-      let tree = buildTree(ids);
-      Map.String.size(tree.nodes) == Array.size(ids);
+      let tree = BasicTree.fromArray(ids);
+      let uniques = Set.String.fromArray(ids);
+      Map.String.size(tree.nodes) == Set.String.size(uniques);
     };
 
     // XXX Don't let bucklescript remove the checkAddNodes function as an
@@ -37,8 +43,14 @@ describe("Tree", () => {
     Js.log(checkAddNodes);
 
     // TODO it would be nice to have some reason bindings for fast-check, but
-    // calling it from raw JS is an acceptable work-around for the moment
-    %raw
-    "fc.assert(fc.property(fc.array(fc.string()), checkAddNodes))";
-  });
+    // calling it from raw JS is an acceptable work-around for the moment.
+    Expect.(
+      expect(() => {
+        %raw
+        "fc.assert(fc.property(fc.array(fc.string()), checkAddNodes))"
+      })
+      |> not
+      |> toThrow
+    );
+  })
 });
