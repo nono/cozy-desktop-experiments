@@ -16,6 +16,7 @@ using:
 - [Belt](https://reasonml.org/apis/javascript/latest/belt) for the stdlib
 - [Yarn v1](https://classic.yarnpkg.com/lang/en/) for managing the dependencies
 - [Jest](https://jestjs.io/) to run tests
+- [Fast-check](https://github.com/dubzzz/fast-check) for property based testing.
 
 You can look at the `scripts` section of the `package.json` to see the useful
 commands for developers (the `:w` suffix is used for watch mode, when the task
