@@ -1,11 +1,10 @@
-%raw
-"const fc = require('fast-check');";
-
 open Jest;
 
 module BasicTree = {
   type t = Tree.t(string);
   let rootID = "root-dir";
+
+  let generator = FastCheck.array(FastCheck.string());
 
   let fromArray = (ids: array(string)): t => {
     let rec aux = (acc, ids) => {
@@ -38,19 +37,6 @@ describe("Tree", () => {
       Map.String.size(tree.nodes) == Set.String.size(uniques);
     };
 
-    // XXX Don't let bucklescript remove the checkAddNodes function as an
-    // optimization (as it don't see the call from the raw JS)
-    Js.log(checkAddNodes);
-
-    // TODO it would be nice to have some reason bindings for fast-check, but
-    // calling it from raw JS is an acceptable work-around for the moment.
-    Expect.(
-      expect(() => {
-        %raw
-        "fc.assert(fc.property(fc.array(fc.string()), checkAddNodes))"
-      })
-      |> not
-      |> toThrow
-    );
+    FastCheck.expect(BasicTree.generator, checkAddNodes);
   })
 });

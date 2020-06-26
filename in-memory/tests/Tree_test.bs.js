@@ -3,14 +3,15 @@
 
 var Jest = require("@glennsl/bs-jest/src/jest.js");
 var Belt_List = require("bs-platform/lib/js/belt_List.js");
+var FastCheck = require("fast-check");
 var Tree$InMemory = require("../src/Tree.bs.js");
 var Belt_MapString = require("bs-platform/lib/js/belt_MapString.js");
 var Belt_SetString = require("bs-platform/lib/js/belt_SetString.js");
-
-const fc = require('fast-check');
-;
+var FastCheck$InMemory = require("./FastCheck.bs.js");
 
 var rootID = "root-dir";
+
+var generator = FastCheck.array(FastCheck.string());
 
 function fromArray(ids) {
   var _acc = Tree$InMemory.init(rootID);
@@ -39,6 +40,7 @@ function fromArray(ids) {
 
 var BasicTree = {
   rootID: rootID,
+  generator: generator,
   fromArray: fromArray
 };
 
@@ -49,12 +51,9 @@ Jest.describe("Tree", (function (param) {
                         var uniques = Belt_SetString.fromArray(ids);
                         return Belt_MapString.size(tree.nodes) === Belt_SetString.size(uniques);
                       };
-                      console.log(checkAddNodes);
-                      return Jest.Expect.toThrow(Jest.Expect.not_(Jest.Expect.expect(function (param) {
-                                          return (fc.assert(fc.property(fc.array(fc.string()), checkAddNodes)));
-                                        })));
+                      return FastCheck$InMemory.expect(generator, checkAddNodes);
                     }));
       }));
 
 exports.BasicTree = BasicTree;
-/*  Not a pure module */
+/* generator Not a pure module */
