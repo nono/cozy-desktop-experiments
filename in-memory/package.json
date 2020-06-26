@@ -9,9 +9,7 @@
     "test:w": "jest --watch",
     "clean": "bsb -clean-world"
   },
-  "keywords": [
-    "BuckleScript"
-  ],
+  "keywords": ["BuckleScript"],
   "author": "Bruno Michel",
   "license": "MIT",
   "devDependencies": {
@@ -20,6 +18,7 @@
     "fast-check": "1.25.1"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*test.bs.js"]
   }
 }
