@@ -4,7 +4,6 @@
   "scripts": {
     "build": "bsb -make-world",
     "build:w": "bsb -make-world -w",
-    "format": "bsrefmt --in-place src/*.re src/*/*.re __tests__/*.re",
     "test": "jest",
     "test:w": "jest --watch",
     "clean": "bsb -clean-world"
@@ -14,7 +13,7 @@
   "license": "MIT",
   "devDependencies": {
     "@glennsl/bs-jest": "0.5.1",
-    "bs-platform": "8.0.1",
+    "bs-platform": "8.1.0",
     "fast-check": "1.25.1"
   },
   "jest": {

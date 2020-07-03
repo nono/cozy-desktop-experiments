@@ -1,29 +1,29 @@
 type effect =
-  | FetchChangesFeed;
+  | FetchChangesFeed
 
-type effects = list(effect);
+type effects = list<effect>
 
 type event =
   | Tick
-  | ReceiveChangesFeed(Remote.changes);
+  | ReceiveChangesFeed(Remote.changes)
 
-type config = {cozyURL: string};
+type config = {cozyURL: string}
 
-type ticks = int;
+type ticks = int
 
 type changesFeedState =
   | ChangesFeedNeverFetched
   | ChangesFeedCurrentlyFetching
-  | ChangesFeedLastFetchedAt(ticks);
+  | ChangesFeedLastFetchedAt(ticks)
 
-type states = {changes: changesFeedState};
+type states = {changes: changesFeedState}
 
 type t = {
   config,
   ticked: ticks,
   states,
   remote: Remote.tree,
-};
+}
 
 let init = (config: config): t => {
   {
@@ -33,5 +33,5 @@ let init = (config: config): t => {
       changes: ChangesFeedNeverFetched,
     },
     remote: Remote.emptyTree,
-  };
-};
+  }
+}

@@ -11,8 +11,8 @@ with property based testing and start building a simulator.
 I wanted static typing and it looks like OCaml could be a good fit here. I'm
 using:
 
-- [Reason](https://reasonml.org/) for the syntax
 - [BuckleScript](https://bucklescript.github.io/) as the build tool
+- [New BuckleScript syntax](https://reasonml.org/docs/reason-compiler/latest/new-bucklescript-syntax) as the syntax
 - [Belt](https://reasonml.org/apis/javascript/latest/belt) for the stdlib
 - [Yarn v1](https://classic.yarnpkg.com/lang/en/) for managing the dependencies
 - [Jest](https://jestjs.io/) to run tests
