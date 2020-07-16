@@ -9,8 +9,8 @@ module BasicTree = {
   let fromArray = (ids: array<string>): t => {
     let rec aux = (acc, ids) => {
       switch ids {
-      | list[] => acc
-      | list[id, ...rest] =>
+      | list{} => acc
+      | list{id, ...rest} =>
         aux(
           Tree.addNode(
             acc,

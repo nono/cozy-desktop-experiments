@@ -1,5 +1,4 @@
-type effect =
-  | FetchChangesFeed
+type effect = FetchChangesFeed
 
 type effects = list<effect>
 
@@ -19,15 +18,15 @@ type changesFeedState =
 type states = {changes: changesFeedState}
 
 type t = {
-  config,
+  config: config,
   ticked: ticks,
-  states,
+  states: states,
   remote: Remote.tree,
 }
 
 let init = (config: config): t => {
   {
-    config,
+    config: config,
     ticked: 0,
     states: {
       changes: ChangesFeedNeverFetched,
