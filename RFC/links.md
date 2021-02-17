@@ -8,6 +8,14 @@ take for cozy-desktop:
 - https://dropbox.tech/infrastructure/rewriting-the-heart-of-our-sync-engine
 - https://dropbox.tech/infrastructure/-testing-our-new-sync-engine
 
+## CRDT
+
+A highly-available move operation for replicated trees and distributed
+filesystems: [paper](https://martin.kleppmann.com/papers/move-op.pdf).
+
+I'm not convinced by this approach for cozy-desktop, but maybe some ideas can
+be taken.
+
 ## Simulators
 
 - [FoundationDB](https://www.youtube.com/watch?v=4fFDFbi3toc)
