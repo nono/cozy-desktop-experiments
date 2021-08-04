@@ -8,6 +8,11 @@
 - http://www.wsanchez.net/papers/USENIX_2000/
 - https://help.dropbox.com/en-us/installs-integrations/sync-uploads/files-not-syncing
 
+## Swap 2 files
+
+On Linux, it is possible to swap 2 files in a single operation with `renameat2`
+with the `RENAME_EXCHANGE` flag. Cf https://unix.stackexchange.com/a/561609
+
 ## Extended attributes
 
 GNU/Linux and macOS have [extended file attributes](https://en.wikipedia.org/wiki/Extended_file_attributes).
