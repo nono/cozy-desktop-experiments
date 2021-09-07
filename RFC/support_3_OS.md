@@ -13,6 +13,14 @@
 On Linux, it is possible to swap 2 files in a single operation with `renameat2`
 with the `RENAME_EXCHANGE` flag. Cf https://unix.stackexchange.com/a/561609
 
+## Inode generation numbers
+
+File systems on Linux can reuse the same inode number for a file if the
+previous file with this inode number has been deleted. But the two files will
+have a different inode generation number. This number is tracked inside the
+file system, but it's possible to find it via an obscure call to `ioctl` with
+`FS_IOC_GETVERSION`: https://stackoverflow.com/a/28006048.
+
 ## Extended attributes
 
 GNU/Linux and macOS have [extended file attributes](https://en.wikipedia.org/wiki/Extended_file_attributes).
