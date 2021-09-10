@@ -1,9 +1,11 @@
 package sync
 
 type Event interface {
-	EventName() string
+	Update(state *State) (*State, []Operation)
 }
 
-type EventTick struct{}
+type EventStart struct{}
 
-func (e EventTick) EventName() string { return "tick" }
+func (e EventStart) Update(state *State) (*State, []Operation) {
+	return state, []Operation{OpStop{}}
+}
