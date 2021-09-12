@@ -1,8 +1,11 @@
 package sync
 
 import (
+	"errors"
 	"io/fs"
 	"os"
+	"syscall"
+	"time"
 )
 
 type LocalFS interface {
@@ -47,4 +50,55 @@ func (dir dirFS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return nil, err
 	}
 	return entries, nil
+}
+
+func MemFS() LocalFS {
+	return memFS{}
+}
+
+type memFS struct{}
+
+type memFileInfo struct {
+	name    string
+	size    int64
+	mode    fs.FileMode
+	modTime time.Time
+	sys     *syscall.Stat_t
+}
+
+func (info memFileInfo) Name() string       { return info.name }
+func (info memFileInfo) Size() int64        { return info.size }
+func (info memFileInfo) Mode() fs.FileMode  { return info.mode }
+func (info memFileInfo) ModTime() time.Time { return info.modTime }
+func (info memFileInfo) IsDir() bool        { return info.mode.IsDir() }
+func (info memFileInfo) Sys() interface{}   { return info.sys }
+
+func (mem memFS) Open(name string) (fs.File, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+func (mem memFS) Stat(name string) (fs.FileInfo, error) {
+	if !fs.ValidPath(name) {
+		return nil, &os.PathError{Op: "stat", Path: name, Err: os.ErrInvalid}
+	}
+	if name == "." {
+		return memFileInfo{
+			name:    ".",
+			size:    4096,
+			mode:    fs.ModeDir | 0755,
+			modTime: time.Now(),
+			sys:     &syscall.Stat_t{Ino: 1},
+		}, nil
+	}
+	return nil, errors.New("Not yet implemented")
+}
+
+func (mem memFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if !fs.ValidPath(name) {
+		return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
+	}
+	if name == "." {
+		return []fs.DirEntry{}, nil
+	}
+	return nil, errors.New("Not yet implemented")
 }

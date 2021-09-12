@@ -10,6 +10,7 @@ func main() {
 	fmt.Println("Start")
 	localDir := "."
 	local := sync.DirFS(localDir)
+	// local := sync.MemFS()
 	platform := sync.NewPlatform(local)
 	sync.Start(platform)
 }
