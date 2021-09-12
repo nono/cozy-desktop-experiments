@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/nono/cozy-desktop-experiments/ng/sync"
 )
@@ -10,7 +9,7 @@ import (
 func main() {
 	fmt.Println("Start")
 	localDir := "."
-	local := os.DirFS(localDir)
+	local := sync.DirFS(localDir)
 	platform := sync.NewPlatform(local)
 	sync.Start(platform)
 }

@@ -1,13 +1,11 @@
 package sync
 
-import "io/fs"
-
 type Platform struct {
 	Events chan Event
-	Local  fs.FS
+	Local  LocalFS
 }
 
-func NewPlatform(local fs.FS) *Platform {
+func NewPlatform(local LocalFS) *Platform {
 	return &Platform{
 		Events: make(chan Event),
 		Local:  local,
