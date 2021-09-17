@@ -1,13 +1,16 @@
-package sync
+package state
 
-func Start(platform *Platform) {
+type State struct {
+}
+
+func Sync(platform Platform) {
 	state := &State{}
 	ops := EventStart{}.Update(state)
 	for {
 		for _, op := range ops {
 			op.Go(platform)
 		}
-		event := <-platform.Events
+		event := platform.NextEvent()
 		ops = event.Update(state)
 	}
 }
