@@ -1,10 +1,13 @@
 package state
 
 type State struct {
+	local *LocalState
 }
 
 func Sync(platform Platform) {
-	state := &State{}
+	state := &State{
+		local: NewLocalState(),
+	}
 	ops := EventStart{}.Update(state)
 	for {
 		for _, op := range ops {
