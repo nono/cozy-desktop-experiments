@@ -1,9 +1,11 @@
 package state
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 
@@ -14,13 +16,14 @@ type LocalState struct {
 }
 
 type LocalNode struct {
-	ID   LocalID
-	Ino  uint64 // 0 means unknown
-	Name string
-	Kind Kind
+	ID       LocalID
+	Ino      uint64 // 0 means unknown
+	ParentID LocalID
+	Name     string
+	Kind     Kind
 }
 
-type LocalID int
+type LocalID uint64
 type Kind int
 
 const (
@@ -29,7 +32,8 @@ const (
 	DirKind
 )
 
-var nextLocalID LocalID = 0
+var nextLocalID LocalID = 2 // 0 = unknown, and 1 is reserved for the root
+const RootID LocalID = 1
 
 func NewLocalState() *LocalState {
 	return &LocalState{
@@ -47,10 +51,53 @@ func (nodes *LocalState) Upsert(n *LocalNode) {
 		nodes.ByIno[n.Ino] = n
 	}
 	if n.ID == 0 {
-		nextLocalID++
 		n.ID = nextLocalID
+		nextLocalID++
 	}
 	nodes.ByID[n.ID] = n
+	fmt.Printf("Upsert %#v\n", n)
+}
+
+func (nodes *LocalState) Root() *LocalNode {
+	return nodes.ByID[RootID]
+}
+
+func (nodes *LocalState) ByPath(path string) (*LocalNode, error) {
+	parts := strings.Split(path, string(filepath.Separator))
+	node := nodes.Root()
+	for {
+		if node == nil {
+			return nil, errors.New("Not found")
+		}
+		if len(parts) == 0 {
+			return node, nil
+		}
+		part := parts[0]
+		parts = parts[1:]
+		if part == "." {
+			continue
+		}
+		// TODO optimize me
+		parentID := node.ID
+		node = nil
+		for _, n := range nodes.ByID {
+			if n.Name == part && n.ParentID == parentID {
+				node = n
+			}
+		}
+	}
+}
+
+func (nodes *LocalState) PrintTree(node *LocalNode, indent int) {
+	for i := 0; i < indent; i++ {
+		fmt.Print("  ")
+	}
+	fmt.Printf("- %#v\n", node)
+	for _, n := range nodes.ByID {
+		if n.ParentID == node.ID && n != node { // n != node is needed to avoid looping on the root
+			nodes.PrintTree(n, indent+1)
+		}
+	}
 }
 
 type OpStat struct {
@@ -73,7 +120,9 @@ type EventStatDone struct {
 func (e EventStatDone) Update(state *State) []Operation {
 	fmt.Printf("Update %#v\n", e.Info)
 	if e.Op.Path == "." && e.Error == nil && e.Info.IsDir() {
-		fmt.Printf("inode number = %v\n", e.Info.Sys().(*syscall.Stat_t).Ino)
+		node := &LocalNode{ID: RootID, ParentID: RootID, Name: "", Kind: DirKind}
+		node.Ino = getIno(e.Info)
+		state.local.Upsert(node)
 		state.local.ScansInProgress++
 		return []Operation{OpScan{"."}}
 	}
@@ -102,9 +151,17 @@ func (e EventScanDone) Update(state *State) []Operation {
 	state.local.ScansInProgress--
 	fmt.Printf("Update\n")
 	ops := []Operation{}
+	var parentID LocalID
+	if len(e.Entries) > 0 {
+		if parent, err := state.local.ByPath(e.Path); err == nil {
+			parentID = parent.ID
+		}
+	}
 	for _, entry := range e.Entries {
-		fmt.Printf("* %#v\n", entry)
-		node := &LocalNode{Name: entry.Name(), Kind: FileKind} // TODO ino
+		node := &LocalNode{ParentID: parentID, Name: entry.Name(), Kind: FileKind}
+		if info, err := entry.Info(); err == nil {
+			node.Ino = getIno(info)
+		}
 		if entry.IsDir() {
 			state.local.ScansInProgress++
 			path := filepath.Join(e.Path, node.Name)
@@ -114,7 +171,13 @@ func (e EventScanDone) Update(state *State) []Operation {
 		state.local.Upsert(node)
 	}
 	if state.local.ScansInProgress == 0 {
+		fmt.Printf("---\n")
+		state.local.PrintTree(state.local.Root(), 0)
 		return []Operation{OpStop{}}
 	}
 	return ops
+}
+
+func getIno(info fs.FileInfo) uint64 {
+	return info.Sys().(*syscall.Stat_t).Ino
 }
