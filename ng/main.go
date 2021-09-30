@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/nono/cozy-desktop-experiments/ng/local"
+	"github.com/nono/cozy-desktop-experiments/ng/localfs"
 	"github.com/nono/cozy-desktop-experiments/ng/platform"
 	"github.com/nono/cozy-desktop-experiments/ng/state"
 )
@@ -11,8 +12,12 @@ import (
 func main() {
 	fmt.Println("Start")
 	localDir := "."
-	localFS := local.DirFS(localDir)
-	// localFS := local.MemFS()
+	localFS := localfs.DirFS(localDir)
+	// localFS := localfs.MemFS()
 	platform := platform.New(localFS)
-	state.Sync(platform)
+	if err := state.Sync(platform); err != nil {
+		fmt.Printf("Error: %s\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Done.\n")
 }
