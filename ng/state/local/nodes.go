@@ -18,16 +18,16 @@ type Node struct {
 	Ino      uint64 // 0 means unknown
 	ParentID ID
 	Name     string
-	Kind     Kind
+	Type     Type
 }
 
 type ID uint64
-type Kind int
+type Type int
 
 const (
-	UnknownKind Kind = iota
-	FileKind
-	DirKind
+	UnknownType Type = iota
+	FileType
+	DirType
 )
 
 var nextID ID = 2 // 0 = unknown, and 1 is reserved for the root
@@ -43,7 +43,7 @@ func NewState() *State {
 		ID:       rootID,
 		ParentID: rootID,
 		Name:     "",
-		Kind:     DirKind,
+		Type:     DirType,
 	}
 	state.Upsert(root)
 	return state
@@ -130,7 +130,7 @@ func (state *State) CheckEventualConsistency() error {
 		if n.Name == "" && n.ID != rootID {
 			return fmt.Errorf("local node %#v should have a name", n)
 		}
-		if n.Kind != FileKind && n.Kind != DirKind {
+		if n.Type != FileType && n.Type != DirType {
 			return fmt.Errorf("local node %#v should be a file or directory", n)
 		}
 	}

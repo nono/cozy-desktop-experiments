@@ -67,7 +67,7 @@ func (e EventScanDone) Update(state *State) []Operation {
 		}
 	}
 	for _, entry := range e.Entries {
-		node := &local.Node{ParentID: parentID, Name: entry.Name(), Kind: local.FileKind}
+		node := &local.Node{ParentID: parentID, Name: entry.Name(), Type: local.FileType}
 		if info, err := entry.Info(); err == nil {
 			node.Ino = getIno(info)
 		}
@@ -75,7 +75,7 @@ func (e EventScanDone) Update(state *State) []Operation {
 			state.Local.ScansInProgress++
 			path := filepath.Join(e.Path, node.Name)
 			ops = append(ops, OpScan{path})
-			node.Kind = local.DirKind
+			node.Type = local.DirType
 		}
 		state.Local.Upsert(node)
 	}

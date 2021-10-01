@@ -1,14 +1,19 @@
 package state
 
-import "github.com/nono/cozy-desktop-experiments/ng/state/local"
+import (
+	"github.com/nono/cozy-desktop-experiments/ng/state/local"
+	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
+)
 
 type State struct {
-	Local *local.State
+	Local  *local.State
+	Remote *remote.State
 }
 
 func Sync(platform Platform) error {
 	state := &State{
-		Local: local.NewState(),
+		Local:  local.NewState(),
+		Remote: remote.NewState(),
 	}
 	ops := EventStart{}.Update(state)
 	for {

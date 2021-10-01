@@ -4,10 +4,10 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/nono/cozy-desktop-experiments/ng/state"
+	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
 
-func DirFS(dir string) state.FS {
+func DirFS(dir string) local.FS {
 	return dirFS(dir)
 }
 

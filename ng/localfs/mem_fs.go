@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nono/cozy-desktop-experiments/ng/state"
+	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
 
-func MemFS() state.FS {
+func MemFS() local.FS {
 	return memFS{}
 }
 
