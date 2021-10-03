@@ -6,6 +6,24 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
 )
 
+type OpRefreshToken struct {
+}
+
+func (op OpRefreshToken) Go(platform Platform) {
+	go func() {
+		err := platform.Client().Refresh()
+		platform.Notify(EventRefreshDone{Error: err})
+	}()
+}
+
+type EventRefreshDone struct {
+	Error error
+}
+
+func (e EventRefreshDone) Update(state *State) []Operation {
+	return []Operation{}
+}
+
 type OpChanges struct {
 	Seq *remote.Seq
 }

@@ -2,6 +2,7 @@ package remote
 
 type Client interface {
 	Changes(seq *Seq) (*ChangesResponse, error)
+	Refresh() error
 }
 
 type ChangesResponse struct {

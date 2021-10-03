@@ -7,7 +7,11 @@ import (
 )
 
 type Stack struct {
-	Address string
+	Address      string
+	ClientID     string
+	ClientSecret string
+	AccessToken  string
+	RefreshToken string
 }
 
 func NewStack(address string) remote.Client {
@@ -16,4 +20,8 @@ func NewStack(address string) remote.Client {
 
 func (s *Stack) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	return nil, errors.New("Not yet implemented")
+}
+
+func (s *Stack) Refresh() error {
+	return nil // TODO
 }
