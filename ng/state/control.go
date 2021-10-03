@@ -3,9 +3,10 @@ package state
 type EventStart struct{}
 
 func (e EventStart) Update(state *State) []Operation {
+	state.Remote.Refreshing = true
 	return []Operation{
 		OpStat{"."},
-		OpChanges{state.Remote.Seq},
+		OpRefreshToken{},
 	}
 }
 

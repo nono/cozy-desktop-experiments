@@ -1,8 +1,12 @@
 package remote
 
+import "github.com/nono/cozy-desktop-experiments/ng/state/types"
+
 type State struct {
-	ByID map[ID]*Doc
-	Seq  *Seq
+	ByID        map[ID]*Doc
+	Seq         *Seq
+	Refreshing  bool
+	RefreshedAt types.Clock
 }
 
 type Doc struct {

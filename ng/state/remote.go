@@ -12,16 +12,21 @@ type OpRefreshToken struct {
 func (op OpRefreshToken) Go(platform Platform) {
 	go func() {
 		err := platform.Client().Refresh()
-		platform.Notify(EventRefreshDone{Error: err})
+		platform.Notify(EventTokenRefreshed{Error: err})
 	}()
 }
 
-type EventRefreshDone struct {
+type EventTokenRefreshed struct {
 	Error error
 }
 
-func (e EventRefreshDone) Update(state *State) []Operation {
-	return []Operation{}
+func (e EventTokenRefreshed) Update(state *State) []Operation {
+	// TODO handle error
+	state.Remote.Refreshing = false
+	state.Remote.RefreshedAt = state.Clock
+	return []Operation{
+		OpChanges{state.Remote.Seq},
+	}
 }
 
 type OpChanges struct {
