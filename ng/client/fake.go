@@ -21,3 +21,7 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 func (f *Fake) Refresh() error {
 	return nil
 }
+
+func (f *Fake) Synchronized() error {
+	return nil
+}
