@@ -5,11 +5,15 @@ import (
 )
 
 type Fake struct {
-	Address string
+	Address           string
+	SynchronizedCount int
 }
 
 func NewFake(address string) remote.Client {
-	return &Fake{Address: address}
+	return &Fake{
+		Address:           address,
+		SynchronizedCount: 0,
+	}
 }
 
 func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
@@ -23,5 +27,6 @@ func (f *Fake) Refresh() error {
 }
 
 func (f *Fake) Synchronized() error {
+	f.SynchronizedCount++
 	return nil
 }
