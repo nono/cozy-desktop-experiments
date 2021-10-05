@@ -54,6 +54,12 @@ In those two cases, information has been lost by the client, and it can't use
 its usual method to detect files that have been moved/renamed in a reliable way.
 Extended file attributes could be useful here.
 
+## Paths
+
+### Linux
+
+- https://unterwaditzer.net/2021/linux-paths.html
+
 ## Timestamps for the file systems
 
 ### Windows
