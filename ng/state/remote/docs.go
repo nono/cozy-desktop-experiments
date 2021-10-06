@@ -11,12 +11,14 @@ type State struct {
 
 type Doc struct {
 	ID    ID
-	DirID ID
+	Rev   Rev
 	Type  string
 	Name  string
+	DirID ID
 }
 
 type ID string
+type Rev string
 
 func NewState() *State {
 	return &State{

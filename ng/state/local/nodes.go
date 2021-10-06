@@ -19,6 +19,7 @@ type Node struct {
 	ParentID ID
 	Name     string
 	Type     Type
+	// TODO executable bit, {c,m,birth}time
 }
 
 type ID uint64
