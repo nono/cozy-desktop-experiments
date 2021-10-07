@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -52,6 +53,8 @@ func (s *Stack) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) 
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		// Flush the body to allow reusing the connection with keepalive
+		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return nil, fmt.Errorf("invalid status code %d for CreateDir", res.StatusCode)
 	}
 	return jsonapi.ParseDoc(res.Body)
@@ -71,6 +74,8 @@ func (s *Stack) Refresh() error {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		// Flush the body to allow reusing the connection with keepalive
+		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return fmt.Errorf("invalid status code %d for Refresh", res.StatusCode)
 	}
 
