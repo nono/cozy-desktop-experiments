@@ -89,6 +89,7 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 }
 
 func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
+	// TODO find a way to simulate latency
 	if name == "" {
 		return nil, errors.New("CreateDir: name is missing")
 	}

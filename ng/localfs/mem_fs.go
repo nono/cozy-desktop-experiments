@@ -5,6 +5,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -12,10 +14,24 @@ import (
 )
 
 func MemFS() local.FS {
-	return memFS{}
+	baseDir := &memDir{
+		info: memFileInfo{
+			name:    ".",
+			size:    4096,
+			mode:    fs.ModeDir | 0755,
+			modTime: time.Now(),
+			sys:     &syscall.Stat_t{Ino: 1},
+		},
+		path: ".",
+	}
+	return memFS{
+		ByPath: map[string]*memDir{".": baseDir},
+	}
 }
 
-type memFS struct{}
+type memFS struct {
+	ByPath map[string]*memDir
+}
 
 type memFile struct {
 	info memFileInfo
@@ -58,19 +74,11 @@ func (info memFileInfo) IsDir() bool        { return info.mode.IsDir() }
 func (info memFileInfo) Sys() interface{}   { return info.sys }
 
 func (mem memFS) Open(name string) (fs.File, error) {
-	if name == "." {
-		return memDir{
-			info: memFileInfo{
-				name:    ".",
-				size:    4096,
-				mode:    fs.ModeDir | 0755,
-				modTime: time.Now(),
-				sys:     &syscall.Stat_t{Ino: 1},
-			},
-			path: ".",
-		}, nil
+	dir, ok := mem.ByPath[name]
+	if !ok {
+		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrInvalid}
 	}
-	return nil, errors.New("Not yet implemented")
+	return dir, nil
 }
 
 func (mem memFS) Stat(name string) (fs.FileInfo, error) {
@@ -100,6 +108,39 @@ func (mem memFS) ReadDir(name string) ([]fs.DirEntry, error) {
 		return d.ReadDir(999_999)
 	}
 	return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
+}
+
+func (mem memFS) Mkdir(name string) error {
+	if !fs.ValidPath(name) || name == "." {
+		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
+	}
+	if _, ok := mem.ByPath[name]; ok {
+		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
+	}
+	parent, dirname := filepath.Split(name)
+	if parent == "" {
+		parent = "."
+	} else {
+		parent = strings.TrimSuffix(parent, Separator)
+	}
+	if _, ok := mem.ByPath[parent]; !ok {
+		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
+	}
+	mem.ByPath[name] = &memDir{
+		info: memFileInfo{
+			name:    dirname,
+			size:    4096,
+			mode:    fs.ModeDir | 0755,
+			modTime: time.Now(),
+			sys:     &syscall.Stat_t{Ino: mem.NextIno()},
+		},
+		path: name,
+	}
+	return nil
+}
+
+func (mem memFS) NextIno() uint64 {
+	return uint64(len(mem.ByPath) + 1) // TODO
 }
 
 var _ fs.FS = memFS{}
