@@ -42,20 +42,25 @@ func (f memFile) Read(b []byte) (int, error) { return 0, errors.New("Not impleme
 func (f memFile) Close() error               { return nil }
 
 type memDir struct {
-	info memFileInfo
-	path string
+	info     memFileInfo
+	path     string
+	children []fs.DirEntry
 }
 
+func (d memDir) Name() string               { return d.info.name }
+func (d memDir) IsDir() bool                { return true }
+func (d memDir) Type() fs.FileMode          { return d.info.mode }
+func (d memDir) Info() (fs.FileInfo, error) { return d.info, nil }
 func (d memDir) Stat() (fs.FileInfo, error) { return d.info, nil }
 func (d memDir) Read(b []byte) (int, error) {
 	return 0, &fs.PathError{Op: "read", Path: d.path, Err: fs.ErrInvalid}
 }
 func (d memDir) Close() error { return nil }
 func (d memDir) ReadDir(count int) ([]fs.DirEntry, error) {
-	if count > 0 {
-		return nil, io.EOF
+	if count <= 0 || len(d.children) < count {
+		return d.children, nil
 	}
-	return []fs.DirEntry{}, nil
+	return nil, io.EOF
 }
 
 type memFileInfo struct {
@@ -97,15 +102,12 @@ func (mem memFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if !fs.ValidPath(name) {
 		return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
 	}
-	if name == "." {
-		return []fs.DirEntry{}, nil
-	}
 	dir, err := mem.Open(name)
 	if err != nil {
 		return nil, err
 	}
 	if d, ok := dir.(memDir); ok {
-		return d.ReadDir(999_999)
+		return d.ReadDir(-1)
 	}
 	return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
 }
@@ -117,16 +119,17 @@ func (mem memFS) Mkdir(name string) error {
 	if _, ok := mem.ByPath[name]; ok {
 		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
 	}
-	parent, dirname := filepath.Split(name)
-	if parent == "" {
-		parent = "."
+	parentname, dirname := filepath.Split(name)
+	if parentname == "" {
+		parentname = "."
 	} else {
-		parent = strings.TrimSuffix(parent, Separator)
+		parentname = strings.TrimSuffix(parentname, Separator)
 	}
-	if _, ok := mem.ByPath[parent]; !ok {
+	parent, ok := mem.ByPath[parentname]
+	if !ok {
 		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
 	}
-	mem.ByPath[name] = &memDir{
+	dir := &memDir{
 		info: memFileInfo{
 			name:    dirname,
 			size:    4096,
@@ -136,6 +139,8 @@ func (mem memFS) Mkdir(name string) error {
 		},
 		path: name,
 	}
+	mem.ByPath[name] = dir
+	parent.children = append(parent.children, dir)
 	return nil
 }
 
