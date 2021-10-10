@@ -24,7 +24,7 @@ func TestMemFS(t *testing.T) {
 		if err := fs.Mkdir("foo/bar/baz"); err != nil {
 			t.Fatal(err)
 		}
-		if err := fstest.TestFS(fs, "./foo", "foo/bar", "foo/bar/baz"); err != nil {
+		if err := fstest.TestFS(fs, "foo", "foo/bar", "foo/bar/baz"); err != nil {
 			t.Fatal(err)
 		}
 	})

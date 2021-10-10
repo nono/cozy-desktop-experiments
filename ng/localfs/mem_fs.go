@@ -15,7 +15,7 @@ import (
 
 func MemFS() local.FS {
 	baseDir := &memDir{
-		info: memFileInfo{
+		info: &memFileInfo{
 			name:    ".",
 			size:    4096,
 			mode:    fs.ModeDir | 0755,
@@ -34,33 +34,60 @@ type memFS struct {
 }
 
 type memFile struct {
-	info memFileInfo
+	info *memFileInfo
 }
 
-func (f memFile) Stat() (fs.FileInfo, error) { return f.info, nil }
-func (f memFile) Read(b []byte) (int, error) { return 0, errors.New("Not implemeted") }
-func (f memFile) Close() error               { return nil }
+func (f *memFile) Name() string               { return f.info.name }
+func (f *memFile) IsDir() bool                { return false }
+func (f *memFile) Type() fs.FileMode          { return f.info.mode }
+func (f *memFile) Info() (fs.FileInfo, error) { return f.info, nil }
+
+type memFileHandler struct {
+	f *memFile
+	// TODO closed bool
+	// TODO pos int
+}
+
+func (fh *memFileHandler) Stat() (fs.FileInfo, error) { return fh.f.Info() }
+func (fh *memFileHandler) Read(b []byte) (int, error) { return 0, errors.New("Not implemeted") }
+func (fh *memFileHandler) Close() error               { return nil }
 
 type memDir struct {
-	info     memFileInfo
+	info     *memFileInfo
 	path     string
 	children []fs.DirEntry
 }
 
-func (d memDir) Name() string               { return d.info.name }
-func (d memDir) IsDir() bool                { return true }
-func (d memDir) Type() fs.FileMode          { return d.info.mode }
-func (d memDir) Info() (fs.FileInfo, error) { return d.info, nil }
-func (d memDir) Stat() (fs.FileInfo, error) { return d.info, nil }
-func (d memDir) Read(b []byte) (int, error) {
-	return 0, &fs.PathError{Op: "read", Path: d.path, Err: fs.ErrInvalid}
+func (d *memDir) Name() string               { return d.info.name }
+func (d *memDir) IsDir() bool                { return true }
+func (d *memDir) Type() fs.FileMode          { return d.info.mode.Type() }
+func (d *memDir) Info() (fs.FileInfo, error) { return d.info, nil }
+
+type memDirHandler struct {
+	d   *memDir
+	pos int
 }
-func (d memDir) Close() error { return nil }
-func (d memDir) ReadDir(count int) ([]fs.DirEntry, error) {
-	if count <= 0 || len(d.children) < count {
-		return d.children, nil
+
+func (dh *memDirHandler) Stat() (fs.FileInfo, error) { return dh.d.Info() }
+func (dh *memDirHandler) Read(b []byte) (int, error) {
+	return 0, &fs.PathError{Op: "read", Path: dh.d.path, Err: fs.ErrInvalid}
+}
+func (dh *memDirHandler) Close() error { return nil }
+func (dh *memDirHandler) ReadDir(count int) ([]fs.DirEntry, error) {
+	if dh.pos >= len(dh.d.children) {
+		if count <= 0 {
+			return []fs.DirEntry{}, nil
+		}
+		return nil, io.EOF
 	}
-	return nil, io.EOF
+
+	from := dh.pos
+	to := dh.pos + count
+	if count <= 0 || to > len(dh.d.children) {
+		to = len(dh.d.children)
+	}
+	dh.pos += to - from
+	return dh.d.children[from:to], nil
 }
 
 type memFileInfo struct {
@@ -79,11 +106,12 @@ func (info memFileInfo) IsDir() bool        { return info.mode.IsDir() }
 func (info memFileInfo) Sys() interface{}   { return info.sys }
 
 func (mem memFS) Open(name string) (fs.File, error) {
+	name = strings.TrimSuffix(name, "./")
 	dir, ok := mem.ByPath[name]
 	if !ok {
 		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrInvalid}
 	}
-	return dir, nil
+	return &memDirHandler{d: dir, pos: 0}, nil
 }
 
 func (mem memFS) Stat(name string) (fs.FileInfo, error) {
@@ -102,17 +130,18 @@ func (mem memFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if !fs.ValidPath(name) {
 		return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
 	}
-	dir, err := mem.Open(name)
+	handler, err := mem.Open(name)
 	if err != nil {
 		return nil, err
 	}
-	if d, ok := dir.(memDir); ok {
-		return d.ReadDir(-1)
+	if dh, ok := handler.(*memDirHandler); ok {
+		return dh.ReadDir(-1)
 	}
 	return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
 }
 
 func (mem memFS) Mkdir(name string) error {
+	name = filepath.Clean(name)
 	if !fs.ValidPath(name) || name == "." {
 		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
 	}
@@ -130,7 +159,7 @@ func (mem memFS) Mkdir(name string) error {
 		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
 	}
 	dir := &memDir{
-		info: memFileInfo{
+		info: &memFileInfo{
 			name:    dirname,
 			size:    4096,
 			mode:    fs.ModeDir | 0755,
@@ -148,6 +177,11 @@ func (mem memFS) NextIno() uint64 {
 	return uint64(len(mem.ByPath) + 1) // TODO
 }
 
+// TODO add a CheckInvariants method
+
 var _ fs.FS = memFS{}
-var _ fs.File = memFile{}
-var _ fs.ReadDirFile = memDir{}
+var _ fs.DirEntry = &memFile{}
+var _ fs.DirEntry = &memDir{}
+var _ fs.File = &memFileHandler{}
+var _ fs.ReadDirFile = &memDirHandler{}
+var _ fs.FileInfo = &memFileInfo{}
