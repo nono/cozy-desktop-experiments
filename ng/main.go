@@ -12,8 +12,8 @@ import (
 
 func main() {
 	localDir := "."
-	localFS := localfs.DirFS(localDir)
-	// localFS := localfs.MemFS()
+	localFS := localfs.NewDirFS(localDir)
+	// localFS := localfs.NewMemFS()
 
 	remoteClient := client.NewStack("http://cozy.localhost:8080/")
 	// remoteClient := client.NewFake("http://cozy.localhost:8080/")

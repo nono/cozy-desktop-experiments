@@ -2,6 +2,7 @@ package localfs
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -13,7 +14,7 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
 
-func MemFS() local.FS {
+func NewMemFS() local.FS {
 	baseDir := &memDir{
 		info: &memFileInfo{
 			name:    ".",
@@ -24,7 +25,7 @@ func MemFS() local.FS {
 		},
 		path: ".",
 	}
-	return memFS{
+	return &memFS{
 		ByPath: map[string]*memDir{".": baseDir},
 	}
 }
@@ -105,20 +106,20 @@ func (info memFileInfo) ModTime() time.Time { return info.modTime }
 func (info memFileInfo) IsDir() bool        { return info.mode.IsDir() }
 func (info memFileInfo) Sys() interface{}   { return info.sys }
 
-func (mem memFS) Open(name string) (fs.File, error) {
-	name = strings.TrimSuffix(name, "./")
-	dir, ok := mem.ByPath[name]
+func (mem *memFS) Open(path string) (fs.File, error) {
+	path = strings.TrimSuffix(path, "./")
+	dir, ok := mem.ByPath[path]
 	if !ok {
-		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrInvalid}
+		return nil, &os.PathError{Op: "open", Path: path, Err: os.ErrInvalid}
 	}
 	return &memDirHandler{d: dir, pos: 0}, nil
 }
 
-func (mem memFS) Stat(name string) (fs.FileInfo, error) {
-	if !fs.ValidPath(name) {
-		return nil, &os.PathError{Op: "stat", Path: name, Err: os.ErrInvalid}
+func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
+	if !fs.ValidPath(path) {
+		return nil, &os.PathError{Op: "stat", Path: path, Err: os.ErrInvalid}
 	}
-	f, err := mem.Open(name)
+	f, err := mem.Open(path)
 	defer f.Close()
 	if err != nil {
 		return nil, err
@@ -126,60 +127,79 @@ func (mem memFS) Stat(name string) (fs.FileInfo, error) {
 	return f.Stat()
 }
 
-func (mem memFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	if !fs.ValidPath(name) {
-		return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
+func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
+	if !fs.ValidPath(path) {
+		return nil, &os.PathError{Op: "readdir", Path: path, Err: os.ErrInvalid}
 	}
-	handler, err := mem.Open(name)
+	handler, err := mem.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	if dh, ok := handler.(*memDirHandler); ok {
 		return dh.ReadDir(-1)
 	}
-	return nil, &os.PathError{Op: "readdir", Path: name, Err: os.ErrInvalid}
+	return nil, &os.PathError{Op: "readdir", Path: path, Err: os.ErrInvalid}
 }
 
-func (mem memFS) Mkdir(name string) error {
-	name = filepath.Clean(name)
-	if !fs.ValidPath(name) || name == "." {
-		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
+func (mem *memFS) Mkdir(path string) error {
+	path = filepath.Clean(path)
+	if !fs.ValidPath(path) || path == "." {
+		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
-	if _, ok := mem.ByPath[name]; ok {
-		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
+	if _, ok := mem.ByPath[path]; ok {
+		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
-	parentname, dirname := filepath.Split(name)
-	if parentname == "" {
-		parentname = "."
+	parentPath, name := filepath.Split(path)
+	if parentPath == "" {
+		parentPath = "."
 	} else {
-		parentname = strings.TrimSuffix(parentname, Separator)
+		parentPath = strings.TrimSuffix(parentPath, Separator)
 	}
-	parent, ok := mem.ByPath[parentname]
+	parent, ok := mem.ByPath[parentPath]
 	if !ok {
-		return &os.PathError{Op: "mkdir", Path: name, Err: os.ErrInvalid}
+		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
 	dir := &memDir{
 		info: &memFileInfo{
-			name:    dirname,
+			name:    name,
 			size:    4096,
 			mode:    fs.ModeDir | 0755,
 			modTime: time.Now(),
 			sys:     &syscall.Stat_t{Ino: mem.NextIno()},
 		},
-		path: name,
+		path: path,
 	}
-	mem.ByPath[name] = dir
+	mem.ByPath[path] = dir
 	parent.children = append(parent.children, dir)
 	return nil
 }
 
-func (mem memFS) NextIno() uint64 {
+func (mem *memFS) CheckInvariants() error {
+	if _, ok := mem.ByPath["."]; !ok {
+		return errors.New("root is missing")
+	}
+	for _, dir := range mem.ByPath {
+		if _, ok := mem.ByPath[filepath.Dir(dir.path)]; !ok {
+			return fmt.Errorf("%#v has no parent", dir)
+		}
+		if dir.IsDir() != dir.Type().IsDir() {
+			return fmt.Errorf("%#v is both a file and a directory", dir)
+		}
+		for _, child := range dir.children {
+			child := child.(*memDir)
+			if child.path != filepath.Join(dir.path, child.info.name) {
+				fmt.Printf("%#v path is incorrect", child)
+			}
+		}
+	}
+	return nil
+}
+
+func (mem *memFS) NextIno() uint64 {
 	return uint64(len(mem.ByPath) + 1) // TODO
 }
 
-// TODO add a CheckInvariants method
-
-var _ fs.FS = memFS{}
+var _ fs.FS = &memFS{}
 var _ fs.DirEntry = &memFile{}
 var _ fs.DirEntry = &memDir{}
 var _ fs.File = &memFileHandler{}
