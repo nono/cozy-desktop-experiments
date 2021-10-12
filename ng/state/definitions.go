@@ -10,12 +10,13 @@ type Platform interface {
 	Client() remote.Client
 	Notify(event Event)
 	NextEvent() Event
+	Exec(cmd Command)
 }
 
 type Event interface {
-	Update(state *State) []Operation
+	Update(state *State) []Command
 }
 
-type Operation interface {
-	Go(platform Platform)
+type Command interface {
+	Exec(platform Platform)
 }

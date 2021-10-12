@@ -2,16 +2,16 @@ package state
 
 type EventStart struct{}
 
-func (e EventStart) Update(state *State) []Operation {
+func (e EventStart) Update(state *State) []Command {
 	state.Remote.Refreshing = true
-	return []Operation{
-		OpStat{"."},
-		OpRefreshToken{},
+	return []Command{
+		CmdStat{"."},
+		CmdRefreshToken{},
 	}
 }
 
-type OpStop struct{}
+type CmdStop struct{}
 
-func (o OpStop) Go(platform Platform) {
+func (cmd CmdStop) Exec(platform Platform) {
 	panic("Unreachable code")
 }

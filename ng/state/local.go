@@ -9,57 +9,53 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
 
-type OpStat struct {
+type CmdStat struct {
 	Path string
 }
 
-func (o OpStat) Go(platform Platform) {
-	go func() {
-		info, err := platform.FS().Stat(o.Path)
-		platform.Notify(EventStatDone{Op: o, Info: info, Error: err})
-	}()
+func (cmd CmdStat) Exec(platform Platform) {
+	info, err := platform.FS().Stat(cmd.Path)
+	platform.Notify(EventStatDone{Cmd: cmd, Info: info, Error: err})
 }
 
 type EventStatDone struct {
-	Op    OpStat
+	Cmd   CmdStat
 	Info  fs.FileInfo
 	Error error
 }
 
-func (e EventStatDone) Update(state *State) []Operation {
+func (e EventStatDone) Update(state *State) []Command {
 	fmt.Printf("Update %#v\n", e.Info)
-	if e.Op.Path == "." && e.Error == nil && e.Info.IsDir() {
+	if e.Cmd.Path == "." && e.Error == nil && e.Info.IsDir() {
 		node := state.Local.Root()
 		node.Ino = getIno(e.Info)
 		state.Local.Upsert(node)
 		state.Local.ScansInProgress++
-		return []Operation{OpScan{"."}}
+		return []Command{CmdScan{"."}}
 	}
-	return []Operation{OpStop{}}
+	return []Command{CmdStop{}}
 }
 
-type OpScan struct {
+type CmdScan struct {
 	Path string
 }
 
-func (o OpScan) Go(platform Platform) {
-	go func() {
-		entries, err := platform.FS().ReadDir(o.Path)
-		platform.Notify(EventScanDone{Op: o, Path: o.Path, Entries: entries, Error: err})
-	}()
+func (cmd CmdScan) Exec(platform Platform) {
+	entries, err := platform.FS().ReadDir(cmd.Path)
+	platform.Notify(EventScanDone{Cmd: cmd, Path: cmd.Path, Entries: entries, Error: err})
 }
 
 type EventScanDone struct {
-	Op      OpScan
+	Cmd     CmdScan
 	Path    string
 	Entries []fs.DirEntry
 	Error   error
 }
 
-func (e EventScanDone) Update(state *State) []Operation {
+func (e EventScanDone) Update(state *State) []Command {
 	state.Local.ScansInProgress--
 	fmt.Printf("Update\n")
-	ops := []Operation{}
+	cmds := []Command{}
 	var parentID local.ID
 	if len(e.Entries) > 0 {
 		if parent, err := state.Local.ByPath(e.Path); err == nil {
@@ -74,16 +70,16 @@ func (e EventScanDone) Update(state *State) []Operation {
 		if entry.IsDir() {
 			state.Local.ScansInProgress++
 			path := filepath.Join(e.Path, node.Name)
-			ops = append(ops, OpScan{path})
+			cmds = append(cmds, CmdScan{path})
 			node.Type = local.DirType
 		}
 		state.Local.Upsert(node)
 	}
 	if state.Local.ScansInProgress == 0 {
 		state.Local.PrintTree()
-		return []Operation{OpStop{}}
+		return []Command{CmdStop{}}
 	}
-	return ops
+	return cmds
 }
 
 func getIno(info fs.FileInfo) uint64 {

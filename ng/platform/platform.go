@@ -35,3 +35,10 @@ func (p *Platform) Notify(event state.Event) {
 func (p *Platform) NextEvent() state.Event {
 	return <-p.events
 }
+
+func (p *Platform) Exec(cmd state.Command) {
+	go func() {
+		// TODO recover error
+		cmd.Exec(p)
+	}()
+}
