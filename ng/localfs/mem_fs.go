@@ -116,7 +116,7 @@ func (mem *memFS) Open(path string) (fs.File, error) {
 }
 
 func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
-	if !fs.ValidPath(path) {
+	if !validPath(path) {
 		return nil, &os.PathError{Op: "stat", Path: path, Err: os.ErrInvalid}
 	}
 	f, err := mem.Open(path)
@@ -128,7 +128,7 @@ func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
 }
 
 func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
-	if !fs.ValidPath(path) {
+	if !validPath(path) {
 		return nil, &os.PathError{Op: "readdir", Path: path, Err: os.ErrInvalid}
 	}
 	handler, err := mem.Open(path)
@@ -142,10 +142,10 @@ func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
 }
 
 func (mem *memFS) Mkdir(path string) error {
-	path = filepath.Clean(path)
-	if !fs.ValidPath(path) || path == "." {
+	if !validPath(path) || path == "." || strings.HasSuffix(path, Separator) {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
+	path = filepath.Clean(path)
 	if _, ok := mem.ByPath[path]; ok {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
@@ -188,7 +188,7 @@ func (mem *memFS) CheckInvariants() error {
 		for _, child := range dir.children {
 			child := child.(*memDir)
 			if child.path != filepath.Join(dir.path, child.info.name) {
-				fmt.Printf("%#v path is incorrect", child)
+				return fmt.Errorf("%#v path is incorrect", child)
 			}
 		}
 	}
@@ -197,6 +197,10 @@ func (mem *memFS) CheckInvariants() error {
 
 func (mem *memFS) NextIno() uint64 {
 	return uint64(len(mem.ByPath) + 1) // TODO
+}
+
+func validPath(path string) bool {
+	return fs.ValidPath(path) && !strings.Contains(path, "\x00")
 }
 
 var _ fs.FS = &memFS{}
