@@ -3,6 +3,7 @@ package localfs
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"testing/fstest"
 
@@ -36,8 +37,9 @@ var tempDir string
 var count int
 
 type cmpFS struct {
-	dir dirFS
-	mem *memFS
+	dir     dirFS
+	mem     *memFS
+	parents []string
 }
 
 func (cmp *cmpFS) Init(t *rapid.T) {
@@ -46,22 +48,32 @@ func (cmp *cmpFS) Init(t *rapid.T) {
 	require.NoError(t, os.Mkdir(baseDir, 0755))
 	cmp.dir = NewDirFS(baseDir).(dirFS)
 	cmp.mem = NewMemFS().(*memFS)
+	cmp.parents = []string{"."}
 }
 
 func (cmp *cmpFS) Mkdir(t *rapid.T) {
+	parent := rapid.SampledFrom(cmp.parents).Draw(t, "parent").(string)
 	name := rapid.String().Draw(t, "name").(string)
-	errl := cmp.dir.Mkdir(name)
-	errr := cmp.mem.Mkdir(name)
+	path := filepath.Join(parent, name)
+	errl := cmp.dir.Mkdir(path)
+	errr := cmp.mem.Mkdir(path)
 	require.Equal(t, errl == nil, errr == nil)
+	if errl == nil {
+		cmp.parents = append(cmp.parents, path)
+	}
 }
 
 func (cmp *cmpFS) Check(t *rapid.T) {
 	require.NoError(t, cmp.mem.CheckInvariants())
 
-	left, err := cmp.dir.ReadDir(".")
+	left, err := cmp.dir.ToMemFS()
 	require.NoError(t, err)
-	right, err := cmp.mem.ReadDir(".")
-	require.NoError(t, err)
-	require.Equal(t, len(left), len(right))
-	// TODO improve comparison
+	right := cmp.mem
+	require.Equal(t, len(left.ByPath), len(right.ByPath))
+	for k, v := range left.ByPath {
+		require.Contains(t, right.ByPath, k)
+		require.Equal(t, v.path, right.ByPath[k].path)
+		require.Equal(t, v.info.name, right.ByPath[k].info.name)
+		require.Equal(t, v.info.mode, right.ByPath[k].info.mode)
+	}
 }

@@ -1,8 +1,10 @@
 package localfs
 
 import (
+	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
@@ -53,6 +55,32 @@ func (dir dirFS) Mkdir(path string) error {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
 	return os.Mkdir(string(dir)+Separator+path, 0755)
+}
+
+func (dir dirFS) ToMemFS() (*memFS, error) {
+	mem := NewMemFS().(*memFS)
+	err := dir.addToMemFS(mem, ".")
+	return mem, err
+}
+
+func (dir dirFS) addToMemFS(mem *memFS, path string) error {
+	entries, err := dir.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			return errors.New("Unexpected entry")
+		}
+		entryPath := filepath.Join(path, entry.Name())
+		if err := mem.Mkdir(entryPath); err != nil {
+			return err
+		}
+		if err := dir.addToMemFS(mem, entryPath); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var _ fs.FS = dirFS(".")
