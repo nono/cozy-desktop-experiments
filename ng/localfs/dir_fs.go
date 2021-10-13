@@ -41,7 +41,7 @@ func (dir dirFS) Stat(path string) (fs.FileInfo, error) {
 
 func (dir dirFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if !fs.ValidPath(path) {
-		return nil, &os.PathError{Op: "readdir", Path: path, Err: os.ErrInvalid}
+		return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 	}
 	entries, err := os.ReadDir(string(dir) + Separator + path)
 	if err != nil {
@@ -55,6 +55,13 @@ func (dir dirFS) Mkdir(path string) error {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
 	return os.Mkdir(string(dir)+Separator+path, 0755)
+}
+
+func (dir dirFS) RemoveAll(path string) error {
+	if !fs.ValidPath(path) || path == "." {
+		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
+	}
+	return os.RemoveAll(string(dir) + Separator + path)
 }
 
 func (dir dirFS) ToMemFS() (*memFS, error) {

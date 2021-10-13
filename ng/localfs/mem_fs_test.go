@@ -63,6 +63,13 @@ func (cmp *cmpFS) Mkdir(t *rapid.T) {
 	}
 }
 
+func (cmp *cmpFS) Remove(t *rapid.T) {
+	path := rapid.SampledFrom(cmp.parents).Draw(t, "path").(string)
+	errl := cmp.dir.RemoveAll(path)
+	errr := cmp.mem.RemoveAll(path)
+	require.Equal(t, errl == nil, errr == nil)
+}
+
 func (cmp *cmpFS) Check(t *rapid.T) {
 	require.NoError(t, cmp.mem.CheckInvariants())
 

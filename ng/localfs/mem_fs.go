@@ -129,7 +129,7 @@ func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
 
 func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if !validPath(path) {
-		return nil, &os.PathError{Op: "readdir", Path: path, Err: os.ErrInvalid}
+		return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 	}
 	handler, err := mem.Open(path)
 	if err != nil {
@@ -138,7 +138,7 @@ func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if dh, ok := handler.(*memDirHandler); ok {
 		return dh.ReadDir(-1)
 	}
-	return nil, &os.PathError{Op: "readdir", Path: path, Err: os.ErrInvalid}
+	return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 }
 
 func (mem *memFS) Mkdir(path string) error {
@@ -149,13 +149,7 @@ func (mem *memFS) Mkdir(path string) error {
 	if _, ok := mem.ByPath[path]; ok {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
-	parentPath, name := filepath.Split(path)
-	if parentPath == "" {
-		parentPath = "."
-	} else {
-		parentPath = strings.TrimSuffix(parentPath, Separator)
-	}
-	parent, ok := mem.ByPath[parentPath]
+	name, parent, ok := mem.nameAndParent(path)
 	if !ok {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
@@ -172,6 +166,60 @@ func (mem *memFS) Mkdir(path string) error {
 	mem.ByPath[path] = dir
 	parent.children = append(parent.children, dir)
 	return nil
+}
+
+func (mem *memFS) RemoveAll(path string) error {
+	if !validPath(path) || path == "." {
+		return &os.PathError{Op: "removeAll", Path: path, Err: os.ErrInvalid}
+	}
+	path = filepath.Clean(path)
+	dir, ok := mem.ByPath[path]
+	if !ok {
+		return nil
+	}
+	_, parent, ok := mem.nameAndParent(path)
+	if !ok {
+		return &os.PathError{Op: "removeAll", Path: path, Err: os.ErrInvalid}
+	}
+
+	mem.removeDescendants(dir)
+
+	// https://github.com/golang/go/wiki/SliceTricks#filtering-without-allocating
+	children := parent.children[:0]
+	for _, child := range parent.children {
+		if child != dir {
+			children = append(children, child)
+		}
+	}
+	for i := len(children); i < len(parent.children); i++ {
+		parent.children[i] = nil
+	}
+	parent.children = children
+
+	delete(mem.ByPath, path)
+	return nil
+}
+
+func (mem *memFS) removeDescendants(dir *memDir) {
+	for _, child := range dir.children {
+		if child.IsDir() {
+			mem.removeDescendants(child.(*memDir))
+		}
+		path := filepath.Join(dir.path, child.Name())
+		delete(mem.ByPath, path)
+	}
+	dir.children = nil
+}
+
+func (mem *memFS) nameAndParent(path string) (string, *memDir, bool) {
+	parentPath, name := filepath.Split(path)
+	if parentPath == "" {
+		parentPath = "."
+	} else {
+		parentPath = strings.TrimSuffix(parentPath, Separator)
+	}
+	parent, ok := mem.ByPath[parentPath]
+	return name, parent, ok
 }
 
 func (mem *memFS) CheckInvariants() error {
