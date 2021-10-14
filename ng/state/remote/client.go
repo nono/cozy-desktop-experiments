@@ -8,6 +8,7 @@ import (
 type Client interface {
 	Changes(seq *Seq) (*ChangesResponse, error)
 	CreateDir(parentID ID, name string) (*Doc, error)
+	Trash(doc *Doc) (*Doc, error)
 	Refresh() error
 	Synchronized() error
 }

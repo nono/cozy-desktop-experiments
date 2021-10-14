@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gofrs/uuid"
@@ -23,6 +24,7 @@ type Fake struct {
 type Change struct {
 	Seq int
 	*remote.Doc
+	Skip bool
 }
 
 func NewFake(address string) remote.Client {
@@ -40,12 +42,12 @@ func NewFake(address string) remote.Client {
 	root := &remote.Doc{
 		ID:   remote.RootID,
 		Rev:  generateRev(1),
-		Type: "directory",
+		Type: remote.Directory,
 	}
 	trash := &remote.Doc{
 		ID:    remote.TrashID,
 		Rev:   generateRev(1),
-		Type:  "directory",
+		Type:  remote.Directory,
 		Name:  remote.TrashName,
 		DirID: root.ID,
 	}
@@ -103,13 +105,30 @@ func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 	dir := &remote.Doc{
 		ID:    f.GenerateID(),
 		Rev:   f.GenerateRev(1),
-		Type:  "directory",
+		Type:  remote.Directory,
 		Name:  name,
 		DirID: parentID,
 	}
 	f.ByID[dir.ID] = dir
 	f.addToChangesFeed(dir)
 	return dir, nil
+}
+
+func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
+	if doc.ID == remote.RootID || doc.ID == remote.TrashID {
+		return nil, errors.New("Trash: invalid ID (root or trash)")
+	}
+	was, ok := f.ByID[doc.ID]
+	if !ok {
+		return nil, errors.New("Trash: doc not found")
+	}
+	if was.Rev != doc.Rev {
+		return nil, errors.New("Trash: invalid revision")
+	}
+	was.DirID = remote.TrashID
+	was.Rev = f.GenerateRev(extractGeneration(was.Rev) + 1)
+	f.addToChangesFeed(was)
+	return was, nil
 }
 
 func (f *Fake) Refresh() error {
@@ -121,9 +140,59 @@ func (f *Fake) Synchronized() error {
 	return nil
 }
 
-// TODO add a CheckInvariants method
+func (f *Fake) CheckInvariants() error {
+	root, ok := f.ByID[remote.RootID]
+	if !ok {
+		return errors.New("root is missing")
+	}
+	if root.Type != remote.Directory {
+		return errors.New("root is not a directory")
+	}
+	trash, ok := f.ByID[remote.TrashID]
+	if !ok {
+		return errors.New("trash is missing")
+	}
+	if trash.Type != remote.Directory {
+		return errors.New("trash is not a directory")
+	}
+	if trash.Name != remote.TrashName {
+		return errors.New("trash has not the expected name")
+	}
+	if trash.DirID != root.ID {
+		return errors.New("trash has not the expected DirID")
+	}
+
+	seen := map[remote.ID]map[string]*remote.Doc{} // DirID -> Name -> doc
+	for id, doc := range f.ByID {
+		if id == root.ID {
+			continue
+		}
+		parent, ok := f.ByID[doc.DirID]
+		if !ok {
+			return fmt.Errorf("%#v parent is missing", doc)
+		}
+		if parent.Type != remote.Directory {
+			return fmt.Errorf("%#v is expected to be a directory", parent)
+		}
+
+		if byDirID, ok := seen[doc.DirID]; ok {
+			if other, ok := byDirID[doc.Name]; ok {
+				return fmt.Errorf("%#v and %#v has same path", doc, other)
+			}
+			byDirID[doc.Name] = doc
+		} else {
+			seen[doc.DirID] = map[string]*remote.Doc{doc.Name: doc}
+		}
+	}
+	return nil
+}
 
 func (f *Fake) addToChangesFeed(doc *remote.Doc) {
+	for i, change := range f.Feed {
+		if change.Doc.ID == doc.ID {
+			f.Feed[i].Skip = true
+		}
+	}
 	change := Change{
 		Seq: len(f.Feed),
 		Doc: doc,
@@ -141,4 +210,13 @@ func newUUID() remote.ID {
 func newRev(generation int) remote.Rev {
 	rev := fmt.Sprintf("%d-rev", generation) // TODO improve it
 	return remote.Rev(rev)
+}
+
+func extractGeneration(rev remote.Rev) int {
+	parts := strings.Split(string(rev), "-")
+	n, err := strconv.Atoi(parts[0])
+	if err != nil {
+		panic(fmt.Errorf("cannot extract generation from rev %s", rev))
+	}
+	return n
 }

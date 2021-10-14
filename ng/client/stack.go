@@ -47,7 +47,7 @@ func (s *Stack) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) 
 		"Name": {name},
 	}
 	path := fmt.Sprintf("/files/%s?%s", parentID, params.Encode())
-	res, err := s.post(path, "", nil)
+	res, err := s.NewRequest(http.MethodPost, path).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +60,22 @@ func (s *Stack) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) 
 	return jsonapi.ParseDoc(res.Body)
 }
 
+func (s *Stack) Trash(doc *remote.Doc) (*remote.Doc, error) {
+	res, err := s.NewRequest(http.MethodDelete, fmt.Sprintf("/files/%s", doc.ID)).
+		AddHeader("if-match", string(doc.Rev)).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		// Flush the body to allow reusing the connection with keepalive
+		_, _ = io.Copy(ioutil.Discard, res.Body)
+		return nil, fmt.Errorf("invalid status code %d for Trash", res.StatusCode)
+	}
+	return jsonapi.ParseDoc(res.Body)
+}
+
 func (s *Stack) Refresh() error {
 	params := url.Values{
 		"grant_type":    {"refresh_token"},
@@ -68,7 +84,10 @@ func (s *Stack) Refresh() error {
 		"client_secret": {s.ClientSecret},
 	}
 	body := strings.NewReader(params.Encode())
-	res, err := s.post("/auth/access_token", "application/x-www-form-urlencoded", body)
+	res, err := s.NewRequest(http.MethodPost, "/auth/access_token").
+		ContentType("application/x-www-form-urlencoded").
+		Body(body).
+		Do()
 	if err != nil {
 		return err
 	}
@@ -95,7 +114,7 @@ func (s *Stack) Refresh() error {
 }
 
 func (s *Stack) Synchronized() error {
-	res, err := s.post("/settings/synchronized", "", nil)
+	res, err := s.NewRequest(http.MethodPost, "/settings/synchronized").Do()
 	if err != nil {
 		return err
 	}
@@ -103,14 +122,48 @@ func (s *Stack) Synchronized() error {
 	return nil
 }
 
-func (s *Stack) post(path string, ctype string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, path, body)
+func (s *Stack) NewRequest(verb, path string) *request {
+	headers := map[string]string{
+		"authorization": "Bearer " + s.AccessToken,
+	}
+	return &request{
+		verb:    verb,
+		path:    path,
+		headers: headers,
+		client:  s.Client,
+	}
+}
+
+type request struct {
+	verb    string
+	path    string
+	headers map[string]string
+	body    io.Reader
+	client  *http.Client
+}
+
+func (r *request) ContentType(ctype string) *request {
+	r.headers["content-type"] = ctype
+	return r
+}
+
+func (r *request) AddHeader(key, value string) *request {
+	r.headers[key] = value
+	return r
+}
+
+func (r *request) Body(body io.Reader) *request {
+	r.body = body
+	return r
+}
+
+func (r *request) Do() (*http.Response, error) {
+	req, err := http.NewRequest(r.verb, r.path, r.body)
 	if err != nil {
 		return nil, err
 	}
-	if ctype != "" {
-		req.Header.Add("content-type", ctype)
+	for k, v := range r.headers {
+		req.Header.Add(k, v)
 	}
-	req.Header.Add("authorization", "Bearer "+s.AccessToken)
-	return s.Client.Do(req)
+	return r.client.Do(req)
 }

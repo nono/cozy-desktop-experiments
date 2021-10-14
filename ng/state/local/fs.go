@@ -6,4 +6,5 @@ type FS interface {
 	fs.StatFS
 	fs.ReadDirFS
 	Mkdir(path string) error
+	RemoveAll(path string) error
 }
