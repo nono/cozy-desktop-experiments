@@ -57,6 +57,9 @@ func (cmp *cmpFS) Mkdir(t *rapid.T) {
 	path := filepath.Join(parent, name)
 	errl := cmp.dir.Mkdir(path)
 	errr := cmp.mem.Mkdir(path)
+	if errl == nil && errr != nil {
+		fmt.Printf("errr = %q (path=%s)\n", errr, path)
+	}
 	require.Equal(t, errl == nil, errr == nil)
 	if errl == nil {
 		cmp.parents = append(cmp.parents, path)

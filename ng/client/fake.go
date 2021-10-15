@@ -10,23 +10,30 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
 )
 
+// Fake can be used to simulate a cozy-stack client (and the stack its-self)
+// for tests.
 type Fake struct {
 	Address   string
 	SyncCount int
 	ByID      map[remote.ID]*remote.Doc
 	Feed      []Change
 
+	// Those functions can be overloaded for some tests where we want to
+	// control the values.
 	GenerateID  func() remote.ID
 	GenerateRev func(generation int) remote.Rev
 	GenerateSeq func(generation int) remote.Seq
 }
 
+// Change describes an entry in the changes feed of a fake stack/client.
 type Change struct {
 	Seq int
 	*remote.Doc
 	Skip bool
 }
 
+// NewFake creates a fake client that can be used for tests. It doesn't make
+// any HTTP request, it just simulate them via an in-memory mock.
 func NewFake(address string) remote.Client {
 	generateID := func() remote.ID {
 		return newUUID()
@@ -72,7 +79,7 @@ func NewFake(address string) remote.Client {
 	return fake
 }
 
-// TODO Add limit
+// Changes is required by the remote.Client interface.
 func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	since := 0
 	if seq != nil {
@@ -90,6 +97,7 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	return &remote.ChangesResponse{Docs: docs, Seq: f.GenerateSeq(lastSeq), Pending: 0}, nil
 }
 
+// CreateDir is required by the remote.Client interface.
 func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 	// TODO find a way to simulate latency
 	if name == "" {
@@ -114,6 +122,7 @@ func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 	return dir, nil
 }
 
+// Trash is required by the remote.Client interface.
 func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	if doc.ID == remote.RootID || doc.ID == remote.TrashID {
 		return nil, errors.New("Trash: invalid ID (root or trash)")
@@ -131,15 +140,19 @@ func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	return was, nil
 }
 
+// Refresh is required by the remote.Client interface.
 func (f *Fake) Refresh() error {
 	return nil
 }
 
+// Synchronized is required by the remote.Client interface.
 func (f *Fake) Synchronized() error {
 	f.SyncCount++
 	return nil
 }
 
+// CheckInvariants checks that we don't have inconsistencies in the fake
+// client. It can be used as a way to detect some bugs in the Fake code.
 func (f *Fake) CheckInvariants() error {
 	root, ok := f.ByID[remote.RootID]
 	if !ok {
@@ -204,6 +217,8 @@ func (f *Fake) checkCanMoveUpToRoot(doc *remote.Doc, remaining int) error {
 	return f.checkCanMoveUpToRoot(parent, remaining-1)
 }
 
+// addToChangesFeed adds an entry for the given document in the changes feed.
+// It masks previous entries for the same document, as CouchDB does.
 func (f *Fake) addToChangesFeed(doc *remote.Doc) {
 	for i, change := range f.Feed {
 		if change.Doc.ID == doc.ID {
@@ -217,6 +232,7 @@ func (f *Fake) addToChangesFeed(doc *remote.Doc) {
 	f.Feed = append(f.Feed, change)
 }
 
+// newUUID returns a compact UUID, similar to those used by CouchDB.
 func newUUID() remote.ID {
 	guid := uuid.Must(uuid.NewV4())
 	id := fmt.Sprintf("%s", guid)
@@ -224,11 +240,14 @@ func newUUID() remote.ID {
 	return remote.ID(id)
 }
 
+// newRev takes a generation number and returns a new revision for it.
 func newRev(generation int) remote.Rev {
 	rev := fmt.Sprintf("%d-rev", generation) // TODO improve it
 	return remote.Rev(rev)
 }
 
+// extractGeneration returns the generation number of a revision. It is the
+// first part of the revision, before the "-".
 func extractGeneration(rev remote.Rev) int {
 	parts := strings.Split(string(rev), "-")
 	n, err := strconv.Atoi(parts[0])

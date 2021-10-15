@@ -14,6 +14,7 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
 
+// NewMemFS returns an in-memory mock of local.FS for tests.
 func NewMemFS() local.FS {
 	baseDir := &memDir{
 		info: &memFileInfo{
@@ -106,6 +107,7 @@ func (info memFileInfo) ModTime() time.Time { return info.modTime }
 func (info memFileInfo) IsDir() bool        { return info.mode.IsDir() }
 func (info memFileInfo) Sys() interface{}   { return info.sys }
 
+// Open is required by the local.FS interface.
 func (mem *memFS) Open(path string) (fs.File, error) {
 	path = strings.TrimSuffix(path, "./")
 	dir, ok := mem.ByPath[path]
@@ -115,6 +117,7 @@ func (mem *memFS) Open(path string) (fs.File, error) {
 	return &memDirHandler{d: dir, pos: 0}, nil
 }
 
+// Stat is required by the local.FS interface.
 func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
 	if !validPath(path) {
 		return nil, &os.PathError{Op: "stat", Path: path, Err: os.ErrInvalid}
@@ -127,6 +130,7 @@ func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
 	return f.Stat()
 }
 
+// ReadDir is required by the local.FS interface.
 func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if !validPath(path) {
 		return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
@@ -141,8 +145,9 @@ func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 }
 
+// Mkdir is required by the local.FS interface.
 func (mem *memFS) Mkdir(path string) error {
-	if !validPath(path) || path == "." || strings.HasSuffix(path, Separator) {
+	if !validPath(path) || path == "." || endWithSlash(path) {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
 	path = filepath.Clean(path)
@@ -168,6 +173,7 @@ func (mem *memFS) Mkdir(path string) error {
 	return nil
 }
 
+// RemoveAll is required by the local.FS interface.
 func (mem *memFS) RemoveAll(path string) error {
 	if !validPath(path) || path == "." {
 		return &os.PathError{Op: "removeAll", Path: path, Err: os.ErrInvalid}
@@ -200,6 +206,8 @@ func (mem *memFS) RemoveAll(path string) error {
 	return nil
 }
 
+// removeDescendants remove every thing inside a directory (files and
+// sub-directories).
 func (mem *memFS) removeDescendants(dir *memDir) {
 	for _, child := range dir.children {
 		if child.IsDir() {
@@ -211,17 +219,20 @@ func (mem *memFS) removeDescendants(dir *memDir) {
 	dir.children = nil
 }
 
+// nameAndParent takes a path and return the name, and the parent directory.
 func (mem *memFS) nameAndParent(path string) (string, *memDir, bool) {
 	parentPath, name := filepath.Split(path)
-	if parentPath == "" {
+	if parentPath == "" || parentPath == "/" {
 		parentPath = "."
-	} else {
-		parentPath = strings.TrimSuffix(parentPath, Separator)
+	} else if endWithSlash(parentPath) {
+		parentPath = parentPath[:len(parentPath)-1]
 	}
 	parent, ok := mem.ByPath[parentPath]
 	return name, parent, ok
 }
 
+// CheckInvariants check some properties of the mock. It can be used to detect
+// some bugs in the memFS implementation.
 func (mem *memFS) CheckInvariants() error {
 	if _, ok := mem.ByPath["."]; !ok {
 		return errors.New("root is missing")
@@ -243,12 +254,20 @@ func (mem *memFS) CheckInvariants() error {
 	return nil
 }
 
+// NextIno returns the next free inode number that can be used.
 func (mem *memFS) NextIno() uint64 {
 	return uint64(len(mem.ByPath) + 1) // TODO
 }
 
+// validPath checks that the path is valid, not something like foo/../bar or
+// with a null character.
 func validPath(path string) bool {
 	return fs.ValidPath(path) && !strings.Contains(path, "\x00")
+}
+
+// endWithSlash returns true if the last character of the path is a slash.
+func endWithSlash(path string) bool {
+	return path[len(path)-1] == filepath.Separator
 }
 
 var _ fs.FS = &memFS{}

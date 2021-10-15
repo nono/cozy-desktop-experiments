@@ -1,3 +1,6 @@
+// Package localfs provides an implementation of local.FS that works on a given
+// directory of the local file system. It also provides an in-memory mocks for
+// tests.
 package localfs
 
 import (
@@ -9,61 +12,73 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/local"
 )
 
-const Separator = "/"
-
+// NewDirFS returns a local.FS that makes changes to the given Cozy directory
+// on the local disk.
 func NewDirFS(dir string) local.FS {
 	return dirFS(dir)
 }
 
 type dirFS string
 
+// Open is required by the local.FS interface.
 func (dir dirFS) Open(path string) (fs.File, error) {
 	if !fs.ValidPath(path) {
 		return nil, &os.PathError{Op: "open", Path: path, Err: os.ErrInvalid}
 	}
-	f, err := os.Open(string(dir) + Separator + path)
+	abspath := filepath.Join(string(dir), path)
+	f, err := os.Open(abspath)
 	if err != nil {
 		return nil, err
 	}
 	return f, nil
 }
 
+// Stat is required by the local.FS interface.
 func (dir dirFS) Stat(path string) (fs.FileInfo, error) {
 	if !fs.ValidPath(path) {
 		return nil, &os.PathError{Op: "stat", Path: path, Err: os.ErrInvalid}
 	}
-	info, err := os.Stat(string(dir) + Separator + path)
+	abspath := filepath.Join(string(dir), path)
+	info, err := os.Stat(abspath)
 	if err != nil {
 		return nil, err
 	}
 	return info, nil
 }
 
+// ReadDir is required by the local.FS interface.
 func (dir dirFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if !fs.ValidPath(path) {
 		return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 	}
-	entries, err := os.ReadDir(string(dir) + Separator + path)
+	abspath := filepath.Join(string(dir), path)
+	entries, err := os.ReadDir(abspath)
 	if err != nil {
 		return nil, err
 	}
 	return entries, nil
 }
 
+// Mkdir is required by the local.FS interface.
 func (dir dirFS) Mkdir(path string) error {
 	if !fs.ValidPath(path) {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
-	return os.Mkdir(string(dir)+Separator+path, 0755)
+	abspath := filepath.Join(string(dir), path)
+	return os.Mkdir(abspath, 0755)
 }
 
+// RemoveAll is required by the local.FS interface.
 func (dir dirFS) RemoveAll(path string) error {
 	if !fs.ValidPath(path) || path == "." {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
-	return os.RemoveAll(string(dir) + Separator + path)
+	abspath := filepath.Join(string(dir), path)
+	return os.RemoveAll(abspath)
 }
 
+// ToMemFS will create a memFS with the same files and directories. It can be
+// useful for testing purpose.
 func (dir dirFS) ToMemFS() (*memFS, error) {
 	mem := NewMemFS().(*memFS)
 	err := dir.addToMemFS(mem, ".")

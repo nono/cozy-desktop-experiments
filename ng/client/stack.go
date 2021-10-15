@@ -1,3 +1,6 @@
+// Package client provides a remote.Client implementation that makes requests
+// to cozy-stack. It also provides a fake implementation that mocks it for
+// tests.
 package client
 
 import (
@@ -15,6 +18,7 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
 )
 
+// Stack is a client for cozy-stack.
 type Stack struct {
 	Address      string
 	ClientID     string
@@ -24,8 +28,10 @@ type Stack struct {
 	Client       *http.Client
 }
 
+// NewStack returns a client for cozy-stack.
 func NewStack(address string) remote.Client {
 	// TODO use a specific user-agent
+	// TODO update the OAuth client on new versions of the client
 	return &Stack{
 		Address: address,
 		Client: &http.Client{
@@ -34,13 +40,12 @@ func NewStack(address string) remote.Client {
 	}
 }
 
-// TODO update the OAuth client on new versions of the client
-
+// Changes is required by the remote.Client interface.
 func (s *Stack) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
-	// TODO add an option to skip deleted docs
 	return nil, errors.New("Not yet implemented")
 }
 
+// CreateDir is required by the remote.Client interface.
 func (s *Stack) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 	params := url.Values{
 		"Type": {"directory"},
@@ -60,6 +65,7 @@ func (s *Stack) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) 
 	return jsonapi.ParseDoc(res.Body)
 }
 
+// Trash is required by the remote.Client interface.
 func (s *Stack) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	res, err := s.NewRequest(http.MethodDelete, fmt.Sprintf("/files/%s", doc.ID)).
 		AddHeader("if-match", string(doc.Rev)).
@@ -76,6 +82,7 @@ func (s *Stack) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	return jsonapi.ParseDoc(res.Body)
 }
 
+// Refresh is required by the remote.Client interface.
 func (s *Stack) Refresh() error {
 	params := url.Values{
 		"grant_type":    {"refresh_token"},
@@ -113,6 +120,7 @@ func (s *Stack) Refresh() error {
 	return nil
 }
 
+// Synchronized is required by the remote.Client interface.
 func (s *Stack) Synchronized() error {
 	res, err := s.NewRequest(http.MethodPost, "/settings/synchronized").Do()
 	if err != nil {
@@ -122,6 +130,8 @@ func (s *Stack) Synchronized() error {
 	return nil
 }
 
+// NewRequest creates a request representation that can be forged to send an
+// HTTP request to the stack.
 func (s *Stack) NewRequest(verb, path string) *request {
 	headers := map[string]string{
 		"authorization": "Bearer " + s.AccessToken,
