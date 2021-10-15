@@ -162,29 +162,46 @@ func (f *Fake) CheckInvariants() error {
 		return errors.New("trash has not the expected DirID")
 	}
 
-	seen := map[remote.ID]map[string]*remote.Doc{} // DirID -> Name -> doc
-	for id, doc := range f.ByID {
-		if id == root.ID {
+	max := len(f.ByID) + 1
+	seen := map[string]*remote.Doc{} // "DirID/Name" -> doc
+	for _, doc := range f.ByID {
+		if doc.ID == remote.RootID {
 			continue
 		}
-		parent, ok := f.ByID[doc.DirID]
-		if !ok {
-			return fmt.Errorf("%#v parent is missing", doc)
-		}
-		if parent.Type != remote.Directory {
-			return fmt.Errorf("%#v is expected to be a directory", parent)
+		if err := f.checkCanMoveUpToRoot(doc, max); err != nil {
+			return err
 		}
 
-		if byDirID, ok := seen[doc.DirID]; ok {
-			if other, ok := byDirID[doc.Name]; ok {
-				return fmt.Errorf("%#v and %#v has same path", doc, other)
-			}
-			byDirID[doc.Name] = doc
+		key := fmt.Sprintf("%s/%s", doc.DirID, doc.Name)
+		if other, ok := seen[key]; ok {
+			return fmt.Errorf("%#v and %#v has same path", doc, other)
 		} else {
-			seen[doc.DirID] = map[string]*remote.Doc{doc.Name: doc}
+			seen[key] = doc
 		}
 	}
+
 	return nil
+}
+
+// checkCanMoveUpToRoot ensures that the document is reachable by finding its
+// parent, and the parent of its parent, etc. until the root is found. It
+// ensures that there is no loop like A is the parent of B and B the parent of
+// A.
+func (f *Fake) checkCanMoveUpToRoot(doc *remote.Doc, remaining int) error {
+	parent, ok := f.ByID[doc.DirID]
+	if !ok {
+		return fmt.Errorf("%#v parent is missing", doc)
+	}
+	if parent.Type != remote.Directory {
+		return fmt.Errorf("%#v is expected to be a directory", parent)
+	}
+
+	if parent.ID == remote.RootID {
+		return nil
+	} else if remaining == 0 {
+		return errors.New("there is a loop")
+	}
+	return f.checkCanMoveUpToRoot(parent, remaining-1)
 }
 
 func (f *Fake) addToChangesFeed(doc *remote.Doc) {
