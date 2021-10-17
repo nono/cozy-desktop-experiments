@@ -1,9 +1,17 @@
 package remote
 
 const (
-	RootID    = "io.cozy.files.root-dir"
-	TrashID   = "io.cozy.files.trash-dir"
+	// RootID is the id of the CouchDB document that represents the root on the
+	// Cozy.
+	RootID = "io.cozy.files.root-dir"
+	// TrashID is the id of the CouchDB document that represents the trash on
+	// the Cozy.
+	TrashID = "io.cozy.files.trash-dir"
+	// TrashName is the name of the trash folder on the Cozy.
 	TrashName = ".cozy-trash"
+	// Directory is the type of directories for the CouchDB documents on the
+	// Cozy.
 	Directory = "directory"
-	File      = "file"
+	// File is the type for, well, files for the CouchDB documents on the Cozy.
+	File = "file"
 )

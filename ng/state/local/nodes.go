@@ -7,12 +7,19 @@ import (
 	"strings"
 )
 
+// State is keeping the information about the files in the synchronized
+// directory of the local file system.
 type State struct {
 	ByID            map[ID]*Node
 	ByIno           map[uint64]*Node
 	ScansInProgress int
 }
 
+// Node is a file or directory on the local file system.
+//
+// We don't use the inode number as the main identifier, as inode numbers can
+// be reused on Linux, and we may want to says that two files (with two inode
+// numbers) are the same like when saving a file by using a temporary file.
 type Node struct {
 	ID       ID
 	Ino      uint64 // 0 means unknown
@@ -22,7 +29,10 @@ type Node struct {
 	// TODO executable bit, {c,m,birth}time
 }
 
+// ID is a synthetic number for identifying a node.
 type ID uint64
+
+// Type is used to differentiate files to directories.
 type Type int
 
 const (
@@ -34,6 +44,7 @@ const (
 var nextID ID = 2 // 0 = unknown, and 1 is reserved for the root
 const rootID ID = 1
 
+// NewState creates a new state.
 func NewState() *State {
 	state := &State{
 		ByID:            make(map[ID]*Node),
@@ -50,10 +61,12 @@ func NewState() *State {
 	return state
 }
 
+// Root returns the node for the root of the synchronized directory.
 func (state *State) Root() *Node {
 	return state.ByID[rootID]
 }
 
+// ByPath returns the node with the given path (if it exists).
 func (state *State) ByPath(path string) (*Node, error) {
 	parts := strings.Split(path, string(filepath.Separator))
 	node := state.Root()
@@ -80,6 +93,7 @@ func (state *State) ByPath(path string) (*Node, error) {
 	}
 }
 
+// Upsert will add or update the given node in the state.
 func (state *State) Upsert(n *Node) {
 	if n.Ino != 0 {
 		if was, ok := state.ByIno[n.Ino]; ok {
@@ -95,6 +109,8 @@ func (state *State) Upsert(n *Node) {
 	fmt.Printf("Upsert %#v\n", n)
 }
 
+// CheckInvariants checks a few properties that should always be true. It can
+// be used to detect bugs in the state.Local implementation.
 func (state *State) CheckInvariants() error {
 	for id, n := range state.ByID {
 		if n.ID != id {
@@ -114,6 +130,11 @@ func (state *State) CheckInvariants() error {
 	return nil
 }
 
+// CheckEventualConsistency checks properties that should be true if a stable
+// state is reached, ie when no changes are made to the local file system, and
+// we wait that the desktop client says it is synchronized. Then, properties
+// like all nodes have a type that is file or directory, not unknown, should be
+// true.
 func (state *State) CheckEventualConsistency() error {
 	for _, n := range state.ByID {
 		if n.ID <= 0 {
@@ -138,6 +159,8 @@ func (state *State) CheckEventualConsistency() error {
 	return state.checkTree()
 }
 
+// checkTree is a naive way to check that we can reach all the nodes starting
+// from a root.
 func (state *State) checkTree() error {
 	inTree := map[ID]struct{}{
 		rootID: struct{}{},
@@ -164,6 +187,7 @@ func (state *State) checkTree() error {
 	}
 }
 
+// PrintTree can be used for debug.
 func (state *State) PrintTree() {
 	fmt.Printf("---\n")
 	state.printTree(state.Root(), 0)
