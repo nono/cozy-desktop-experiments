@@ -1,179 +1,87 @@
-// Package client provides a remote.Client implementation that makes requests
-// to cozy-stack. It also provides a fake implementation that mocks it for
-// tests.
 package client
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
-
-	"github.com/nono/cozy-desktop-experiments/ng/client/jsonapi"
-	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
+	"os"
+	"os/exec"
 )
 
-// Stack is a client for cozy-stack.
 type Stack struct {
-	Address      string
-	ClientID     string
-	ClientSecret string
-	AccessToken  string
-	RefreshToken string
-	Client       *http.Client
+	Port  int
+	FSDir string
+	Cmd   *exec.Cmd
 }
 
-// NewStack returns a client for cozy-stack.
-func NewStack(address string) remote.Client {
-	// TODO use a specific user-agent
-	// TODO update the OAuth client on new versions of the client
-	return &Stack{
-		Address: address,
-		Client: &http.Client{
-			Timeout: 2 * time.Minute,
-		},
-	}
+func NewStack(port int, fsdir string) *Stack {
+	return &Stack{Port: port}
 }
 
-// Changes is required by the remote.Client interface.
-func (s *Stack) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
-	return nil, errors.New("Not yet implemented")
+func (s *Stack) AdminPort() string {
+	// keep the same interval as 6060 - 8080
+	return fmt.Sprintf("%d", s.Port-2020)
 }
 
-// CreateDir is required by the remote.Client interface.
-func (s *Stack) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
-	params := url.Values{
-		"Type": {"directory"},
-		"Name": {name},
-	}
-	path := fmt.Sprintf("/files/%s?%s", parentID, params.Encode())
-	res, err := s.NewRequest(http.MethodPost, path).Do()
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		// Flush the body to allow reusing the connection with keepalive
-		_, _ = io.Copy(ioutil.Discard, res.Body)
-		return nil, fmt.Errorf("invalid status code %d for CreateDir", res.StatusCode)
-	}
-	return jsonapi.ParseDoc(res.Body)
-}
-
-// Trash is required by the remote.Client interface.
-func (s *Stack) Trash(doc *remote.Doc) (*remote.Doc, error) {
-	res, err := s.NewRequest(http.MethodDelete, fmt.Sprintf("/files/%s", doc.ID)).
-		AddHeader("if-match", string(doc.Rev)).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		// Flush the body to allow reusing the connection with keepalive
-		_, _ = io.Copy(ioutil.Discard, res.Body)
-		return nil, fmt.Errorf("invalid status code %d for Trash", res.StatusCode)
-	}
-	return jsonapi.ParseDoc(res.Body)
-}
-
-// Refresh is required by the remote.Client interface.
-func (s *Stack) Refresh() error {
-	params := url.Values{
-		"grant_type":    {"refresh_token"},
-		"refresh_token": {s.RefreshToken},
-		"client_id":     {s.ClientID},
-		"client_secret": {s.ClientSecret},
-	}
-	body := strings.NewReader(params.Encode())
-	res, err := s.NewRequest(http.MethodPost, "/auth/access_token").
-		ContentType("application/x-www-form-urlencoded").
-		Body(body).
-		Do()
+func (s *Stack) Start() error {
+	cmd := exec.Command("cozy-stack", "serve",
+		"--port", fmt.Sprintf("%d", s.Port),
+		"--admin-port", s.AdminPort(),
+		"--fsurl", fmt.Sprintf("file://%s/", s.FSDir),
+	)
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		// Flush the body to allow reusing the connection with keepalive
-		_, _ = io.Copy(ioutil.Discard, res.Body)
-		return fmt.Errorf("invalid status code %d for Refresh", res.StatusCode)
-	}
-
-	var data map[string]interface{}
-	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
+	if err := cmd.Start(); err != nil {
 		return err
 	}
-	if token, ok := data["refresh_token"].(string); ok && token != "" {
-		s.AccessToken = token
+	// Wait that the stack is ready
+	buf := make([]byte, 1024)
+	if _, err := stdout.Read(buf); err != nil {
+		return err
 	}
-	token, ok := data["access_token"].(string)
-	if !ok || token == "" {
-		return errors.New("invalid response for Refresh")
-	}
-	s.AccessToken = token
+	io.Copy(os.Stdout, stdout) // TODO use a log file
+	s.Cmd = cmd
 	return nil
 }
 
-// Synchronized is required by the remote.Client interface.
-func (s *Stack) Synchronized() error {
-	res, err := s.NewRequest(http.MethodPost, "/settings/synchronized").Do()
-	if err != nil {
-		return err
+func (s *Stack) Stop() error {
+	if s.Cmd == nil {
+		return nil
 	}
-	defer res.Body.Close()
-	return nil
-}
-
-// NewRequest creates a request representation that can be forged to send an
-// HTTP request to the stack.
-func (s *Stack) NewRequest(verb, path string) *request {
-	headers := map[string]string{
-		"authorization": "Bearer " + s.AccessToken,
+	if err := s.Cmd.Process.Kill(); err != nil {
+		panic(err)
 	}
-	return &request{
-		verb:    verb,
-		path:    path,
-		headers: headers,
-		client:  s.Client,
-	}
+	err := s.Cmd.Wait()
+	s.Cmd = nil
+	return err
 }
 
-type request struct {
-	verb    string
-	path    string
-	headers map[string]string
-	body    io.Reader
-	client  *http.Client
-}
-
-func (r *request) ContentType(ctype string) *request {
-	r.headers["content-type"] = ctype
-	return r
-}
-
-func (r *request) AddHeader(key, value string) *request {
-	r.headers[key] = value
-	return r
-}
-
-func (r *request) Body(body io.Reader) *request {
-	r.body = body
-	return r
-}
-
-func (r *request) Do() (*http.Response, error) {
-	req, err := http.NewRequest(r.verb, r.path, r.body)
-	if err != nil {
+func (s *Stack) CreateInstance(name string) (*Instance, error) {
+	inst := &Instance{Name: name, Stack: s}
+	cmd := exec.Command("cozy-stack", "instance", "add", inst.Domain(),
+		"--passphrase", "cozy",
+		"--public-name", inst.Name,
+		"--email", fmt.Sprintf("%s@cozy.tools", name),
+		"--admin-port", inst.Stack.AdminPort(),
+		"--locale", "en")
+	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
-	for k, v := range r.headers {
-		req.Header.Add(k, v)
-	}
-	return r.client.Do(req)
+	return inst, nil
+}
+
+type Instance struct {
+	Name  string
+	Stack *Stack
+}
+
+func (inst *Instance) Domain() string {
+	return fmt.Sprintf("%s.localhost:%d", inst.Name, inst.Stack.Port)
+}
+
+func (inst *Instance) Remove() error {
+	cmd := exec.Command("cozy-stack", "instance", "rm", inst.Domain(),
+		"--force", "--admin-port", inst.Stack.AdminPort())
+	return cmd.Run()
 }
