@@ -4,6 +4,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,6 +41,45 @@ func New(address string) remote.Client {
 	}
 }
 
+// Register will create an OAuth client on the stack.
+func (c *Client) Register() error {
+	if c.ClientID != "" {
+		return nil
+	}
+	payload, err := json.Marshal(map[string]interface{}{
+		"redirect_uris":    []string{"http://localhost:9000/"},
+		"client_name":      "Cozy-Desktop-NG",
+		"software_id":      "github.com/nono/cozy-desktop-experiments",
+		"software_version": "0.0.1",
+		"client_kind":      "desktop",
+	})
+	if err != nil {
+		return err
+	}
+	res, err := c.NewRequest(http.MethodPost, "/auth/register").
+		ContentType("application/json").
+		Accept("application/json").
+		Body(bytes.NewReader(payload)).
+		Do()
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode/100 != 2 {
+		// Flush the body to allow reusing the connection with keepalive
+		_, _ = io.Copy(ioutil.Discard, res.Body)
+		return fmt.Errorf("invalid status code %d for Register", res.StatusCode)
+	}
+	var body map[string]interface{}
+	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+		return err
+	}
+	c.ClientID, _ = body["client_id"].(string)
+	c.ClientSecret, _ = body["client_secret"].(string)
+	// TODO registration_access_token
+	return nil
+}
+
 // Changes is required by the remote.Client interface.
 func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	return nil, errors.New("Not yet implemented")
@@ -57,7 +97,7 @@ func (c *Client) CreateDir(parentID remote.ID, name string) (*remote.Doc, error)
 		return nil, err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode/100 != 2 {
 		// Flush the body to allow reusing the connection with keepalive
 		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return nil, fmt.Errorf("invalid status code %d for CreateDir", res.StatusCode)
@@ -68,13 +108,15 @@ func (c *Client) CreateDir(parentID remote.ID, name string) (*remote.Doc, error)
 // Trash is required by the remote.Client interface.
 func (c *Client) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	res, err := c.NewRequest(http.MethodDelete, fmt.Sprintf("/files/%s", doc.ID)).
-		AddHeader("if-match", string(doc.Rev)).
+		IfMatch(string(doc.Rev)).
 		Do()
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode/100 != 2 {
+		out, _ := io.ReadAll(res.Body)
+		fmt.Printf("out = %s\n", out)
 		// Flush the body to allow reusing the connection with keepalive
 		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return nil, fmt.Errorf("invalid status code %d for Trash", res.StatusCode)
@@ -84,13 +126,12 @@ func (c *Client) Trash(doc *remote.Doc) (*remote.Doc, error) {
 
 // Refresh is required by the remote.Client interface.
 func (c *Client) Refresh() error {
-	params := url.Values{
+	body := strings.NewReader(url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {c.RefreshToken},
 		"client_id":     {c.ClientID},
 		"client_secret": {c.ClientSecret},
-	}
-	body := strings.NewReader(params.Encode())
+	}.Encode())
 	res, err := c.NewRequest(http.MethodPost, "/auth/access_token").
 		ContentType("application/x-www-form-urlencoded").
 		Body(body).
@@ -99,7 +140,7 @@ func (c *Client) Refresh() error {
 		return err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode/100 != 2 {
 		// Flush the body to allow reusing the connection with keepalive
 		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return fmt.Errorf("invalid status code %d for Refresh", res.StatusCode)
@@ -138,7 +179,7 @@ func (c *Client) NewRequest(verb, path string) *request {
 	}
 	return &request{
 		verb:    verb,
-		path:    path,
+		url:     c.Address + path,
 		headers: headers,
 		client:  c.Client,
 	}
@@ -146,18 +187,25 @@ func (c *Client) NewRequest(verb, path string) *request {
 
 type request struct {
 	verb    string
-	path    string
+	url     string
 	headers map[string]string
 	body    io.Reader
 	client  *http.Client
 }
 
-func (r *request) ContentType(ctype string) *request {
-	r.headers["content-type"] = ctype
-	return r
+func (r *request) Accept(ctype string) *request {
+	return r.addHeader("accept", ctype)
 }
 
-func (r *request) AddHeader(key, value string) *request {
+func (r *request) ContentType(ctype string) *request {
+	return r.addHeader("content-type", ctype)
+}
+
+func (r *request) IfMatch(etag string) *request {
+	return r.addHeader("if-match", etag)
+}
+
+func (r *request) addHeader(key, value string) *request {
 	r.headers[key] = value
 	return r
 }
@@ -168,7 +216,7 @@ func (r *request) Body(body io.Reader) *request {
 }
 
 func (r *request) Do() (*http.Response, error) {
-	req, err := http.NewRequest(r.verb, r.path, r.body)
+	req, err := http.NewRequest(r.verb, r.url, r.body)
 	if err != nil {
 		return nil, err
 	}

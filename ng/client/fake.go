@@ -10,6 +10,9 @@ import (
 	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
 )
 
+// https://github.com/cozy/cozy-stack/blob/master/model/vfs/vfs.go#L24
+const forbiddenFilenameChars = "/\x00\n\r"
+
 // Fake can be used to simulate a cozy-stack client (and the stack its-self)
 // for tests.
 type Fake struct {
@@ -103,7 +106,7 @@ func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 	if name == "" {
 		return nil, errors.New("CreateDir: name is missing")
 	}
-	if strings.Contains("name", "/") {
+	if strings.ContainsAny(name, forbiddenFilenameChars) {
 		return nil, errors.New("CreateDir: name is invalid")
 	}
 	if _, ok := f.ByID[parentID]; !ok {
@@ -133,6 +136,9 @@ func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	}
 	if was.Rev != doc.Rev {
 		return nil, errors.New("Trash: invalid revision")
+	}
+	if f.isInTrash(was) {
+		return nil, errors.New("Trash: already in the trash")
 	}
 	was.DirID = remote.TrashID
 	was.Rev = f.GenerateRev(extractGeneration(was.Rev) + 1)
@@ -230,6 +236,20 @@ func (f *Fake) addToChangesFeed(doc *remote.Doc) {
 		Doc: doc,
 	}
 	f.Feed = append(f.Feed, change)
+}
+
+func (f *Fake) isInTrash(doc *remote.Doc) bool {
+	switch doc.DirID {
+	case remote.RootID:
+		return false
+	case remote.TrashID:
+		return true
+	}
+	parent, ok := f.ByID[doc.DirID]
+	if !ok {
+		panic(errors.New("parent not found"))
+	}
+	return f.isInTrash(parent)
 }
 
 // newUUID returns a compact UUID, similar to those used by CouchDB.
