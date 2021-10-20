@@ -11,23 +11,26 @@ import (
 
 func TestFakeClient(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		client := NewFake("http://cozy.localhost:8080/")
-		require.NoError(t, client.(*Fake).CheckInvariants())
+		client := NewFake("http://cozy.localhost:8080/").(*Fake)
+		client.AddInitialDocs()
+		require.NoError(t, client.CheckInvariants())
 	})
 
 	t.Run("basic", func(t *testing.T) {
-		client := NewFake("http://cozy.localhost:8080/")
+		client := NewFake("http://cozy.localhost:8080/").(*Fake)
+		client.AddInitialDocs()
 		foo, err := client.CreateDir(remote.RootID, "foo")
 		require.NoError(t, err, "CreateDir foo")
 		bar, err := client.CreateDir(foo.ID, "bar")
 		require.NoError(t, err, "CreateDir bar")
 		_, err = client.CreateDir(bar.ID, "baz")
 		require.NoError(t, err, "CreateDir baz")
-		require.NoError(t, client.(*Fake).CheckInvariants())
+		require.NoError(t, client.CheckInvariants())
 	})
 
 	t.Run("invalid name", func(t *testing.T) {
-		client := NewFake("http://cozy.localhost:8080/")
+		client := NewFake("http://cozy.localhost:8080/").(*Fake)
+		client.AddInitialDocs()
 		_, err := client.CreateDir(remote.RootID, "foo/")
 		require.Error(t, err)
 		_, err = client.CreateDir(remote.RootID, "֏\ufeff+$ª!/")
@@ -66,6 +69,8 @@ func (cmp *cmpClient) Init(t *rapid.T) {
 	require.NoError(t, cmp.client.Register())
 	require.NoError(t, inst.CreateAccessToken(cmp.client))
 	cmp.fake = NewFake(addr).(*Fake)
+	// TODO inject revisions for root & trash
+	cmp.fake.AddInitialDocs()
 	cmp.parents = []*remote.Doc{
 		{ID: remote.RootID, Type: remote.Directory},
 	}
@@ -83,7 +88,12 @@ func (cmp *cmpClient) CreateDir(t *rapid.T) {
 	docl, errl := cmp.client.CreateDir(parent.ID, name)
 	if errl == nil {
 		cmp.fake.GenerateID = func() remote.ID { return docl.ID }
-		cmp.fake.GenerateRev = func(_gen int) remote.Rev { return docl.Rev }
+		cmp.fake.GenerateRev = func(id remote.ID, gen int) remote.Rev {
+			if id == docl.ID {
+				return docl.Rev
+			}
+			return newRev(id, gen)
+		}
 	}
 	docr, errr := cmp.fake.CreateDir(parent.ID, name)
 	require.Equal(t, errl == nil, errr == nil)
@@ -102,10 +112,30 @@ func (cmp *cmpClient) Trash(t *rapid.T) {
 	if dir.ID == remote.RootID {
 		return
 	}
-	_, errl := cmp.client.Trash(dir)
-	_, errr := cmp.fake.Trash(dir)
+	docl, errl := cmp.client.Trash(dir)
+	if errl == nil {
+		cmp.fake.GenerateRev = func(id remote.ID, gen int) remote.Rev {
+			if id == docl.ID {
+				return docl.Rev
+			}
+			return newRev(id, gen)
+		}
+		cmp.fake.ConflictName = func(id remote.ID, name string) string {
+			if id == docl.ID {
+				return docl.Name
+			}
+			return conflictName(id, name)
+		}
+	}
+	docr, errr := cmp.fake.Trash(dir)
 	require.Equal(t, errl == nil, errr == nil)
-	// TODO compare docl and docr
+	if errl == nil && errr == nil {
+		require.Equal(t, docl.ID, docr.ID)
+		require.Equal(t, docl.Rev, docr.Rev)
+		require.Equal(t, docl.Type, docr.Type)
+		require.Equal(t, docl.Name, docr.Name)
+		require.Equal(t, docl.DirID, docr.DirID)
+	}
 }
 
 func (cmp *cmpClient) Check(t *rapid.T) {

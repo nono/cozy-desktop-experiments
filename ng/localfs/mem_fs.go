@@ -20,7 +20,7 @@ func NewMemFS() local.FS {
 		info: &memFileInfo{
 			name:    ".",
 			size:    4096,
-			mode:    fs.ModeDir | 0755,
+			mode:    fs.ModeDir | 0750,
 			modTime: time.Now(),
 			sys:     &syscall.Stat_t{Ino: 1},
 		},
@@ -162,7 +162,7 @@ func (mem *memFS) Mkdir(path string) error {
 		info: &memFileInfo{
 			name:    name,
 			size:    4096,
-			mode:    fs.ModeDir | 0755,
+			mode:    fs.ModeDir | 0750,
 			modTime: time.Now(),
 			sys:     &syscall.Stat_t{Ino: mem.NextIno()},
 		},

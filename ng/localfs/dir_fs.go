@@ -65,7 +65,7 @@ func (dir dirFS) Mkdir(path string) error {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
 	abspath := filepath.Join(string(dir), path)
-	return os.Mkdir(abspath, 0755)
+	return os.Mkdir(abspath, 0750)
 }
 
 // RemoveAll is required by the local.FS interface.

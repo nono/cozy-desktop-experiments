@@ -3,8 +3,11 @@ package client
 import (
 	"errors"
 	"fmt"
+	"hash/crc32"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/nono/cozy-desktop-experiments/ng/state/remote"
@@ -23,9 +26,10 @@ type Fake struct {
 
 	// Those functions can be overloaded for some tests where we want to
 	// control the values.
-	GenerateID  func() remote.ID
-	GenerateRev func(generation int) remote.Rev
-	GenerateSeq func(generation int) remote.Seq
+	GenerateID   func() remote.ID
+	GenerateRev  func(id remote.ID, generation int) remote.Rev
+	GenerateSeq  func(generation int) remote.Seq
+	ConflictName func(id remote.ID, name string) string
 }
 
 // Change describes an entry in the changes feed of a fake stack/client.
@@ -38,48 +42,41 @@ type Change struct {
 // NewFake creates a fake client that can be used for tests. It doesn't make
 // any HTTP request, it just simulate them via an in-memory mock.
 func NewFake(address string) remote.Client {
-	generateID := func() remote.ID {
-		return newUUID()
-	}
-	generateRev := func(generation int) remote.Rev {
-		return newRev(generation)
-	}
-	generateSeq := func(generation int) remote.Seq {
-		// TODO improve it
-		return remote.Seq(fmt.Sprintf("%d-seq", generation))
+
+	fake := &Fake{
+		Address:      address,
+		SyncCount:    0,
+		ByID:         map[remote.ID]*remote.Doc{},
+		Feed:         []Change{},
+		GenerateID:   newUUID,
+		GenerateRev:  newRev,
+		GenerateSeq:  newSeq,
+		ConflictName: conflictName,
 	}
 
+	return fake
+}
+
+// AddInitialDocs will create the tree for a new instance (root, trash, etc.).
+func (f *Fake) AddInitialDocs() {
 	root := &remote.Doc{
 		ID:   remote.RootID,
-		Rev:  generateRev(1),
+		Rev:  f.GenerateRev(remote.RootID, 1),
 		Type: remote.Directory,
 	}
 	trash := &remote.Doc{
 		ID:    remote.TrashID,
-		Rev:   generateRev(1),
+		Rev:   f.GenerateRev(remote.TrashID, 1),
 		Type:  remote.Directory,
 		Name:  remote.TrashName,
 		DirID: root.ID,
 	}
-	byID := map[remote.ID]*remote.Doc{
-		root.ID:  root,
-		trash.ID: trash,
-	}
-	fake := &Fake{
-		Address:     address,
-		SyncCount:   0,
-		ByID:        byID,
-		Feed:        []Change{},
-		GenerateID:  generateID,
-		GenerateRev: generateRev,
-		GenerateSeq: generateSeq,
-	}
-	for _, doc := range []*remote.Doc{root, trash} {
-		fake.addToChangesFeed(doc)
-	}
+	// TODO add directories like Photos
 	// TODO add some design docs to the changes feed
-
-	return fake
+	for _, doc := range []*remote.Doc{root, trash} {
+		f.ByID[doc.ID] = doc
+		f.addToChangesFeed(doc)
+	}
 }
 
 // Changes is required by the remote.Client interface.
@@ -113,9 +110,10 @@ func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 		return nil, errors.New("CreateDir: parent does not exist")
 	}
 
+	id := f.GenerateID()
 	dir := &remote.Doc{
-		ID:    f.GenerateID(),
-		Rev:   f.GenerateRev(1),
+		ID:    id,
+		Rev:   f.GenerateRev(id, 1),
 		Type:  remote.Directory,
 		Name:  name,
 		DirID: parentID,
@@ -140,8 +138,13 @@ func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	if f.isInTrash(was) {
 		return nil, errors.New("Trash: already in the trash")
 	}
+	for _, other := range f.ByID {
+		if other.DirID == remote.TrashID && other.Name == was.Name {
+			was.Name = f.ConflictName(was.ID, was.Name)
+		}
+	}
 	was.DirID = remote.TrashID
-	was.Rev = f.GenerateRev(extractGeneration(was.Rev) + 1)
+	was.Rev = f.GenerateRev(was.ID, extractGeneration(was.Rev)+1)
 	f.addToChangesFeed(was)
 	return was, nil
 }
@@ -261,9 +264,27 @@ func newUUID() remote.ID {
 }
 
 // newRev takes a generation number and returns a new revision for it.
-func newRev(generation int) remote.Rev {
-	rev := fmt.Sprintf("%d-rev", generation) // TODO improve it
+func newRev(id remote.ID, generation int) remote.Rev {
+	hashable := fmt.Sprintf("%d-%s", generation, id)
+	hash := crc32.ChecksumIEEE([]byte(hashable))
+	rev := fmt.Sprintf("%d-%0x", generation, hash)
 	return remote.Rev(rev)
+}
+
+// newSeq takes a generation number and returns a new sequence for it.
+func newSeq(generation int) remote.Seq {
+	seq := fmt.Sprintf("%d-seq", generation) // TODO improve it
+	return remote.Seq(seq)
+}
+
+// https://github.com/cozy/cozy-stack/blob/master/model/vfs/rand_suffix.go
+var conflictRand = uint32(time.Now().UnixNano() + int64(os.Getpid()))
+
+func conflictName(id remote.ID, name string) string {
+	conflictRand = conflictRand*1664525 + 1013904223
+	suffix := strconv.Itoa(int(1e9 + conflictRand%1e9))[1:]
+	// https://github.com/cozy/cozy-stack/blob/master/model/vfs/vfs.go#L46
+	return fmt.Sprintf("%s (__cozy__: %s)", name, suffix)
 }
 
 // extractGeneration returns the generation number of a revision. It is the

@@ -45,7 +45,7 @@ type cmpFS struct {
 func (cmp *cmpFS) Init(t *rapid.T) {
 	count++
 	baseDir := fmt.Sprintf("%s/%d", tempDir, count)
-	require.NoError(t, os.Mkdir(baseDir, 0755))
+	require.NoError(t, os.Mkdir(baseDir, 0750))
 	cmp.dir = NewDirFS(baseDir).(dirFS)
 	cmp.mem = NewMemFS().(*memFS)
 	cmp.parents = []string{"."}
