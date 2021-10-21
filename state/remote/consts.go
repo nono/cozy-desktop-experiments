@@ -8,7 +8,7 @@ const (
 	// the Cozy.
 	TrashID = "io.cozy.files.trash-dir"
 	// TrashName is the name of the trash folder on the Cozy.
-	TrashName = ".cozy-trash"
+	TrashName = ".cozy_trash"
 	// Directory is the type of directories for the CouchDB documents on the
 	// Cozy.
 	Directory = "directory"

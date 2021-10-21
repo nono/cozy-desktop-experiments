@@ -80,9 +80,72 @@ func (c *Client) Register() error {
 	return nil
 }
 
+type changesResponse struct {
+	LastSeq remote.Seq      `json:"last_seq"`
+	Pending int             `json:"pending"`
+	Results []changesResult `json:"results"`
+}
+
+type changesResult struct {
+	ID      remote.ID              `json:"id"`
+	Deleted bool                   `json:"deleted"`
+	Doc     map[string]interface{} `json:"doc"`
+}
+
 // Changes is required by the remote.Client interface.
+//
+// Note: the design docs are ignored
 func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	// TODO use the trick from https://github.com/apache/couchdb/discussions/3774
+	params := url.Values{
+		"include_docs": {"true"},
+	}
+	if seq != nil {
+		params.Add("since", string(*seq))
+	}
+	path := fmt.Sprintf("/data/io.cozy.files/_changes?%s", params.Encode())
+	res, err := c.NewRequest(http.MethodGet, path).Do()
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode/100 != 2 {
+		// Flush the body to allow reusing the connection with keepalive
+		_, _ = io.Copy(ioutil.Discard, res.Body)
+		return nil, fmt.Errorf("invalid status code %d for Changes", res.StatusCode)
+	}
+
+	var changes changesResponse
+	if err := json.NewDecoder(res.Body).Decode(&changes); err != nil {
+		return nil, err
+	}
+	docs := make([]*remote.Doc, 0, len(changes.Results))
+	for _, result := range changes.Results {
+		if result.ID.IsDesignDoc() {
+			continue
+		}
+		doc := &remote.Doc{
+			ID: result.ID,
+		}
+		if rev, ok := result.Doc["_rev"].(string); ok {
+			doc.Rev = remote.Rev(rev)
+		}
+		if name, ok := result.Doc["name"].(string); ok {
+			doc.Name = name
+		}
+		if typ, ok := result.Doc["type"].(string); ok {
+			doc.Type = typ
+		}
+		if dirID, ok := result.Doc["dir_id"].(string); ok {
+			doc.DirID = remote.ID(dirID)
+		}
+		docs = append(docs, doc)
+	}
+	return &remote.ChangesResponse{
+		Docs:    docs,
+		Seq:     changes.LastSeq,
+		Pending: changes.Pending,
+	}, nil
 }
 
 // CreateDir is required by the remote.Client interface.

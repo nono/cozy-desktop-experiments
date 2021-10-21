@@ -19,6 +19,8 @@ type Client interface {
 	// Trash will put a file or directory inside the trash on the Cozy.
 	Trash(doc *Doc) (*Doc, error)
 
+	// TODO add an empty trash function for tests
+
 	// Refresh can be used to refresh the OAuth access token.
 	Refresh() error
 

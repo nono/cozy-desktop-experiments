@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -55,24 +56,43 @@ func NewFake(address string) remote.Client {
 }
 
 // AddInitialDocs will create the tree for a new instance (root, trash, etc.).
-func (f *Fake) AddInitialDocs() {
-	root := &remote.Doc{
-		ID:   remote.RootID,
-		Rev:  f.GenerateRev(remote.RootID, 1),
-		Type: remote.Directory,
+func (f *Fake) AddInitialDocs(docs ...*remote.Doc) {
+	if len(docs) == 0 {
+		root := &remote.Doc{
+			ID:   remote.RootID,
+			Rev:  f.GenerateRev(remote.RootID, 1),
+			Type: remote.Directory,
+		}
+		trash := &remote.Doc{
+			ID:    remote.TrashID,
+			Rev:   f.GenerateRev(remote.TrashID, 1),
+			Type:  remote.Directory,
+			Name:  remote.TrashName,
+			DirID: root.ID,
+		}
+		docs = []*remote.Doc{root, trash}
 	}
-	trash := &remote.Doc{
-		ID:    remote.TrashID,
-		Rev:   f.GenerateRev(remote.TrashID, 1),
-		Type:  remote.Directory,
-		Name:  remote.TrashName,
-		DirID: root.ID,
-	}
-	// TODO add directories like Photos
-	// TODO add some design docs to the changes feed
-	for _, doc := range []*remote.Doc{root, trash} {
+	for _, doc := range docs {
 		f.ByID[doc.ID] = doc
 		f.addToChangesFeed(doc)
+	}
+}
+
+// MatchSequence will create dumb entries in the changes feed until it reaches
+// the given sequence generation number. It is used to compensate for the lack
+// of design docs.
+func (f *Fake) MatchSequence(seq remote.Seq) {
+	gen := seq.ExtractGeneration()
+	for {
+		last := f.Feed[len(f.Feed)-1]
+		if last.Seq >= gen {
+			return
+		}
+		f.Feed = append(f.Feed, Change{
+			Seq:  len(f.Feed) + 1,
+			Doc:  &remote.Doc{},
+			Skip: true,
+		})
 	}
 }
 
@@ -82,15 +102,20 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	if seq != nil {
 		since = seq.ExtractGeneration()
 	}
-	lastSeq := 0
+	fmt.Printf("since = %v\n", since)
+	lastSeq := since
 	docs := []*remote.Doc{}
 	for _, c := range f.Feed {
-		if c.Seq < since {
+		if c.Seq <= since {
+			continue
+		}
+		lastSeq = c.Seq
+		if c.Skip {
 			continue
 		}
 		docs = append(docs, c.Doc)
-		lastSeq = c.Seq
 	}
+	fmt.Printf("lastSeq = %v\n", lastSeq)
 	return &remote.ChangesResponse{Docs: docs, Seq: f.GenerateSeq(lastSeq), Pending: 0}, nil
 }
 
@@ -140,6 +165,7 @@ func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 			was.Name = f.ConflictName(was.ID, was.Name)
 		}
 	}
+	f.updateTreeRev(was)
 	was.DirID = remote.TrashID
 	was.Rev = f.GenerateRev(was.ID, extractGeneration(was.Rev)+1)
 	f.addToChangesFeed(was)
@@ -232,12 +258,32 @@ func (f *Fake) addToChangesFeed(doc *remote.Doc) {
 		}
 	}
 	change := Change{
-		Seq: len(f.Feed),
+		Seq: len(f.Feed) + 1,
 		Doc: doc,
 	}
 	f.Feed = append(f.Feed, change)
 }
 
+// updateTreeRev is used to update the revisions of all the descendants of the
+// given directory.
+func (f *Fake) updateTreeRev(dir *remote.Doc) {
+	var children []*remote.Doc
+	for id, doc := range f.ByID {
+		if doc.DirID == dir.ID {
+			children = append(children, f.ByID[id])
+		}
+	}
+	sort.Slice(children, func(i, j int) bool {
+		return children[i].Name < children[j].Name
+	})
+	for _, child := range children {
+		dir.Rev = f.GenerateRev(dir.ID, extractGeneration(dir.Rev)+1)
+		f.addToChangesFeed(child)
+		f.updateTreeRev(child)
+	}
+}
+
+// isInTrash returns true if the doc is a descendant of the trash.
 func (f *Fake) isInTrash(doc *remote.Doc) bool {
 	switch doc.DirID {
 	case remote.RootID:

@@ -60,6 +60,7 @@ type cmpClient struct {
 	inst    *Instance
 	client  *Client
 	fake    *Fake
+	seq     *remote.Seq
 	parents []*remote.Doc
 }
 
@@ -72,9 +73,11 @@ func (cmp *cmpClient) Init(t *rapid.T) {
 	cmp.client = New(addr).(*Client)
 	require.NoError(t, cmp.client.Register())
 	require.NoError(t, inst.CreateAccessToken(cmp.client))
+	changes, err := cmp.client.Changes(nil)
+	require.NoError(t, err)
 	cmp.fake = NewFake(addr).(*Fake)
-	// TODO inject revisions for root & trash
-	cmp.fake.AddInitialDocs()
+	cmp.fake.AddInitialDocs(changes.Docs...)
+	cmp.fake.MatchSequence(changes.Seq)
 	cmp.parents = []*remote.Doc{
 		{ID: remote.RootID, Type: remote.Directory},
 	}
@@ -84,7 +87,21 @@ func (cmp *cmpClient) Cleanup() {
 	_ = cmp.inst.Remove()
 }
 
-// TODO compare calls to the changes feed
+func (cmp *cmpClient) Changes(t *rapid.T) {
+	left, errl := cmp.client.Changes(cmp.seq)
+	right, errr := cmp.fake.Changes(cmp.seq)
+	require.Equal(t, errl == nil, errr == nil)
+	if errl == nil && errr == nil {
+		require.Equal(t, len(left.Docs), len(right.Docs))
+		// TODO not the same revisions, and probably not the same order
+		// for i := range left.Docs {
+		// 	require.Equal(t, left.Docs[i], right.Docs[i])
+		// }
+		require.Equal(t, left.Pending, right.Pending)
+		require.Equal(t, left.Seq.ExtractGeneration(), right.Seq.ExtractGeneration())
+		cmp.seq = &left.Seq
+	}
+}
 
 func (cmp *cmpClient) CreateDir(t *rapid.T) {
 	parent := rapid.SampledFrom(cmp.parents).Draw(t, "parent").(*remote.Doc)

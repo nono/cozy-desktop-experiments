@@ -1,5 +1,7 @@
 # Experiments with cozy-desktop
 
+[![go.dev reference](https://pkg.go.dev/badge/github.com/nono/cozy-desktop-experiments)](https://pkg.go.dev/github.com/nono/cozy-desktop-experiments)
+
 This repository is a place where I can put ideas and experiments on how to
 improve the desktop client for Cozy Cloud. Currently, I am trying to rewrite a
 client in Go with an emphasis on tests and simulation.

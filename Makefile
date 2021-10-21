@@ -22,7 +22,7 @@ lint: scripts/golangci-lint
 .PHONY: lint
 
 scripts/golangci-lint: Makefile
-	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b ./scripts v1.42.0
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b ./scripts v1.42.1
 
 ## unit-tests: run the tests
 unit-tests:
@@ -31,8 +31,8 @@ unit-tests:
 
 ## integration-tests: run the tests
 integration-tests:
-	@go test ./client -rapid.checks=10 -rapid.steps=10 -rapid.v -rapid.nofailfile
-	@go test ./localfs -rapid-checks=10 -rapid.steps=10 -rapid.v -rapid.nofailfile
+	@go test ./client -rapid.checks=10 -rapid.steps=10 -rapid.shrinktime=5s -rapid.v -rapid.nofailfile
+	@go test ./localfs -rapid.checks=10 -rapid.steps=100 -rapid.shrinktime=5s -rapid.v -rapid.nofailfile
 .PHONY: integration-tests
 
 ## clean: clean the generated files and directories
