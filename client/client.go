@@ -8,10 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -31,7 +34,6 @@ type Client struct {
 
 // New returns a client for cozy-stack.
 func New(address string) remote.Client {
-	// TODO use a specific user-agent
 	// TODO update the OAuth client on new versions of the client
 	return &Client{
 		Address: address,
@@ -124,6 +126,7 @@ func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 		if result.ID.IsDesignDoc() {
 			continue
 		}
+		// TODO what if result.Deleted is true
 		doc := &remote.Doc{
 			ID: result.ID,
 		}
@@ -237,8 +240,13 @@ func (c *Client) Synchronized() error {
 // NewRequest creates a request representation that can be forged to send an
 // HTTP request to the stack.
 func (c *Client) NewRequest(verb, path string) *request {
+	var hostID uint32
+	if host, err := os.Hostname(); err == nil {
+		hostID = crc32.ChecksumIEEE([]byte(host))
+	}
 	headers := map[string]string{
 		"authorization": "Bearer " + c.AccessToken,
+		"user-agent":    fmt.Sprintf("Cozy-Desktop-NG-%s-%0x", runtime.GOOS, hostID),
 	}
 	return &request{
 		verb:    verb,
