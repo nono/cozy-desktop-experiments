@@ -18,7 +18,7 @@ type State struct {
 type Doc struct {
 	ID    ID
 	Rev   Rev
-	Type  string // TODO should be an enum
+	Type  string
 	Name  string
 	DirID ID
 }

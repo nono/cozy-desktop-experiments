@@ -50,7 +50,7 @@ func (cmd CmdChanges) Exec(platform Platform) {
 
 // EventChangesDone is used to notify of the result of the changes feed.
 type EventChangesDone struct {
-	Docs    []*remote.Doc
+	Docs    []*remote.ChangedDoc
 	Seq     *remote.Seq
 	Pending int
 	Error   error

@@ -121,12 +121,11 @@ func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	if err := json.NewDecoder(res.Body).Decode(&changes); err != nil {
 		return nil, err
 	}
-	docs := make([]*remote.Doc, 0, len(changes.Results))
+	docs := make([]*remote.ChangedDoc, 0, len(changes.Results))
 	for _, result := range changes.Results {
 		if result.ID.IsDesignDoc() {
 			continue
 		}
-		// TODO what if result.Deleted is true
 		doc := &remote.Doc{
 			ID: result.ID,
 		}
@@ -142,7 +141,8 @@ func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 		if dirID, ok := result.Doc["dir_id"].(string); ok {
 			doc.DirID = remote.ID(dirID)
 		}
-		docs = append(docs, doc)
+		changed := &remote.ChangedDoc{Doc: doc, Deleted: result.Deleted}
+		docs = append(docs, changed)
 	}
 	return &remote.ChangesResponse{
 		Docs:    docs,
@@ -181,8 +181,6 @@ func (c *Client) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode/100 != 2 {
-		out, _ := io.ReadAll(res.Body)
-		fmt.Printf("out = %s\n", out)
 		// Flush the body to allow reusing the connection with keepalive
 		_, _ = io.Copy(ioutil.Discard, res.Body)
 		return nil, fmt.Errorf("invalid status code %d for Trash", res.StatusCode)
@@ -235,6 +233,56 @@ func (c *Client) Synchronized() error {
 	}
 	defer res.Body.Close()
 	return nil
+}
+
+// DocsByID returns a map of id -> doc (for testing purpose).
+func (c *Client) DocsByID() map[remote.ID]*remote.Doc {
+	params := url.Values{
+		"include_docs": {"true"},
+		"limit":        {"10000"},
+	}
+	path := fmt.Sprintf("/data/io.cozy.files/_all_docs?%s", params.Encode())
+	res, err := c.NewRequest(http.MethodGet, path).Do()
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode/100 != 2 {
+		panic(fmt.Errorf("invalid status code %d for DocsByID", res.StatusCode))
+	}
+	var list allDocsResponse
+	if err := json.NewDecoder(res.Body).Decode(&list); err != nil {
+		panic(err)
+	}
+	byID := map[remote.ID]*remote.Doc{}
+	for _, row := range list.Rows {
+		if row.Doc.ID.IsDesignDoc() {
+			continue
+		}
+		doc := &remote.Doc{
+			ID:    row.Doc.ID,
+			Rev:   row.Doc.Rev,
+			Type:  row.Doc.Type,
+			Name:  row.Doc.Name,
+			DirID: row.Doc.DirID,
+		}
+		byID[doc.ID] = doc
+	}
+	return byID
+}
+
+type allDocsResponse struct {
+	Rows []allDocsRow `json:"rows"`
+}
+
+type allDocsRow struct {
+	Doc struct {
+		ID    remote.ID  `json:"_id"`
+		Rev   remote.Rev `json:"_rev"`
+		Type  string     `json:"type"`
+		Name  string     `json:"name"`
+		DirID remote.ID  `json:"dir_id"`
+	} `json:"doc"`
 }
 
 // NewRequest creates a request representation that can be forged to send an

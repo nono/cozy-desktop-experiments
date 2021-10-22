@@ -33,9 +33,15 @@ type Client interface {
 // ChangesResponse describes the successful response to a call to the changes
 // feed.
 type ChangesResponse struct {
-	Docs    []*Doc
+	Docs    []*ChangedDoc
 	Seq     Seq
 	Pending int
+}
+
+// ChangedDoc is a result item from the changes fedd.
+type ChangedDoc struct {
+	*Doc
+	Deleted bool
 }
 
 // Seq is the short for sequence. It is a way to keep a position on the changes

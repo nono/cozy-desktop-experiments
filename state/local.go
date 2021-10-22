@@ -1,7 +1,6 @@
 package state
 
 import (
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"syscall"
@@ -31,7 +30,6 @@ type EventStatDone struct {
 
 // Update is required by Event interface.
 func (e EventStatDone) Update(state *State) []Command {
-	fmt.Printf("Update %#v\n", e.Info)
 	if e.Cmd.Path == "." && e.Error == nil && e.Info.IsDir() {
 		node := state.Local.Root()
 		node.Ino = getIno(e.Info)
@@ -65,7 +63,6 @@ type EventScanDone struct {
 // Update is required by Event interface.
 func (e EventScanDone) Update(state *State) []Command {
 	state.Local.ScansInProgress--
-	fmt.Printf("Update\n")
 	cmds := []Command{}
 	var parentID local.ID
 	if len(e.Entries) > 0 {

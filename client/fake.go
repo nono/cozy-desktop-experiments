@@ -19,6 +19,8 @@ const forbiddenFilenameChars = "/\x00\n\r"
 
 // Fake can be used to simulate a cozy-stack client (and the stack its-self)
 // for tests.
+//
+// TODO find a way to simulate latency
 type Fake struct {
 	Address   string
 	SyncCount int
@@ -36,7 +38,7 @@ type Fake struct {
 // Change describes an entry in the changes feed of a fake stack/client.
 type Change struct {
 	Seq int
-	*remote.Doc
+	*remote.ChangedDoc
 	Skip bool
 }
 
@@ -56,8 +58,9 @@ func NewFake(address string) remote.Client {
 }
 
 // AddInitialDocs will create the tree for a new instance (root, trash, etc.).
-func (f *Fake) AddInitialDocs(docs ...*remote.Doc) {
-	if len(docs) == 0 {
+func (f *Fake) AddInitialDocs(changed ...*remote.ChangedDoc) {
+	var docs []*remote.Doc
+	if len(changed) == 0 {
 		root := &remote.Doc{
 			ID:   remote.RootID,
 			Rev:  f.GenerateRev(remote.RootID, 1),
@@ -71,6 +74,10 @@ func (f *Fake) AddInitialDocs(docs ...*remote.Doc) {
 			DirID: root.ID,
 		}
 		docs = []*remote.Doc{root, trash}
+	} else {
+		for _, doc := range changed {
+			docs = append(docs, doc.Doc)
+		}
 	}
 	for _, doc := range docs {
 		f.ByID[doc.ID] = doc
@@ -89,9 +96,9 @@ func (f *Fake) MatchSequence(seq remote.Seq) {
 			return
 		}
 		f.Feed = append(f.Feed, Change{
-			Seq:  len(f.Feed) + 1,
-			Doc:  &remote.Doc{},
-			Skip: true,
+			Seq:        len(f.Feed) + 1,
+			ChangedDoc: &remote.ChangedDoc{Doc: &remote.Doc{}},
+			Skip:       true,
 		})
 	}
 }
@@ -102,9 +109,8 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	if seq != nil {
 		since = seq.ExtractGeneration()
 	}
-	fmt.Printf("since = %v\n", since)
 	lastSeq := since
-	docs := []*remote.Doc{}
+	docs := []*remote.ChangedDoc{}
 	for _, c := range f.Feed {
 		if c.Seq <= since {
 			continue
@@ -113,15 +119,13 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 		if c.Skip {
 			continue
 		}
-		docs = append(docs, c.Doc)
+		docs = append(docs, c.ChangedDoc)
 	}
-	fmt.Printf("lastSeq = %v\n", lastSeq)
 	return &remote.ChangesResponse{Docs: docs, Seq: f.GenerateSeq(lastSeq), Pending: 0}, nil
 }
 
 // CreateDir is required by the remote.Client interface.
 func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
-	// TODO find a way to simulate latency
 	if name == "" {
 		return nil, errors.New("CreateDir: name is missing")
 	}
@@ -181,6 +185,11 @@ func (f *Fake) Refresh() error {
 func (f *Fake) Synchronized() error {
 	f.SyncCount++
 	return nil
+}
+
+// DocsByID returns a map of id -> doc (for testing purpose).
+func (f *Fake) DocsByID() map[remote.ID]*remote.Doc {
+	return f.ByID
 }
 
 // CheckInvariants checks that we don't have inconsistencies in the fake
@@ -258,8 +267,8 @@ func (f *Fake) addToChangesFeed(doc *remote.Doc) {
 		}
 	}
 	change := Change{
-		Seq: len(f.Feed) + 1,
-		Doc: doc,
+		Seq:        len(f.Feed) + 1,
+		ChangedDoc: &remote.ChangedDoc{Doc: doc, Deleted: false},
 	}
 	f.Feed = append(f.Feed, change)
 }

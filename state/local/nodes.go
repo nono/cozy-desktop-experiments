@@ -106,7 +106,6 @@ func (state *State) Upsert(n *Node) {
 		nextID++
 	}
 	state.ByID[n.ID] = n
-	fmt.Printf("Upsert %#v\n", n)
 }
 
 // CheckInvariants checks a few properties that should always be true. It can

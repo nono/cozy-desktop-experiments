@@ -161,5 +161,19 @@ func (cmp *cmpClient) Trash(t *rapid.T) {
 
 func (cmp *cmpClient) Check(t *rapid.T) {
 	require.NoError(t, cmp.fake.CheckInvariants())
-	// TODO compare the trees
+
+	left := cmp.client.DocsByID()
+	right := cmp.fake.DocsByID()
+	require.Equal(t, len(left), len(right))
+	for id := range left {
+		docl := left[id]
+		docr := right[id]
+		require.NotNil(t, docr)
+		require.Equal(t, docl.ID, docr.ID)
+		// TODO we need to inject the right revisions for Trash
+		// require.Equal(t, docl.Rev, docr.Rev)
+		require.Equal(t, docl.Type, docr.Type)
+		require.Equal(t, docl.Name, docr.Name)
+		require.Equal(t, docl.DirID, docr.DirID)
+	}
 }
