@@ -8,10 +8,11 @@ import (
 
 // State is keeping the information about the files on the Cozy.
 type State struct {
-	ByID        map[ID]*Doc
-	Seq         *Seq
-	Refreshing  bool
-	RefreshedAt types.Clock
+	ByID            map[ID]*Doc
+	Seq             *Seq
+	FetchingChanges bool
+	Refreshing      bool
+	RefreshedAt     types.Clock
 }
 
 // Doc describes a CouchDB document for the io.cozy.files doctype on the Cozy.
@@ -40,4 +41,14 @@ func NewState() *State {
 		ByID: make(map[ID]*Doc),
 		Seq:  nil,
 	}
+}
+
+// Upsert will add or update the given doc in the state.
+func (state *State) Upsert(doc *Doc) {
+	state.ByID[doc.ID] = doc
+}
+
+// MarkAsDeleted is used to mark a document as deleted.
+func (state *State) MarkAsDeleted(id ID) {
+	delete(state.ByID, id)
 }

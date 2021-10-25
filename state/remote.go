@@ -1,8 +1,6 @@
 package state
 
 import (
-	"fmt"
-
 	"github.com/nono/cozy-desktop-experiments/state/remote"
 )
 
@@ -28,6 +26,7 @@ func (e EventTokenRefreshed) Update(state *State) []Command {
 	// TODO handle error
 	state.Remote.Refreshing = false
 	state.Remote.RefreshedAt = state.Clock
+	state.Remote.FetchingChanges = true
 	return []Command{
 		CmdChanges{state.Remote.Seq},
 	}
@@ -58,6 +57,20 @@ type EventChangesDone struct {
 
 // Update is required by Event interface.
 func (e EventChangesDone) Update(state *State) []Command {
-	fmt.Printf("Update %#v\n", e) // TODO
+	// TODO handle error
+	state.Remote.Seq = e.Seq
+	for _, change := range e.Docs {
+		if change.Deleted {
+			state.Remote.MarkAsDeleted(change.Doc.ID)
+		} else {
+			state.Remote.Upsert(change.Doc)
+		}
+	}
+	if e.Pending > 0 {
+		return []Command{
+			CmdChanges{state.Remote.Seq},
+		}
+	}
+	state.Remote.FetchingChanges = false
 	return []Command{}
 }

@@ -15,8 +15,8 @@ func main() {
 	localFS := localfs.NewDirFS(localDir)
 	// localFS := localfs.NewMemFS()
 
-	remoteClient := client.New("http://cozy.localhost:8080/")
-	// remoteClient := client.NewFake("http://cozy.localhost:8080/")
+	// remoteClient := client.New("http://cozy.localhost:8080/")
+	remoteClient := client.NewFake("http://cozy.localhost:8080/")
 
 	fmt.Println("Start")
 	platform := platform.New(localFS, remoteClient)

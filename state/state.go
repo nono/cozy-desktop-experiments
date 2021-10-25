@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/nono/cozy-desktop-experiments/state/common"
 	"github.com/nono/cozy-desktop-experiments/state/local"
 	"github.com/nono/cozy-desktop-experiments/state/remote"
 	"github.com/nono/cozy-desktop-experiments/state/types"
@@ -12,6 +13,7 @@ import (
 type State struct {
 	Local  *local.State
 	Remote *remote.State
+	Common *common.State
 	Clock  types.Clock
 }
 
@@ -21,6 +23,7 @@ func Sync(platform Platform) error {
 	state := &State{
 		Local:  local.NewState(),
 		Remote: remote.NewState(),
+		Common: common.NewState(),
 	}
 	cmds := EventStart{}.Update(state)
 	for {
