@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
-// State is keeping the information about the files in the synchronized
+// Nodes is keeping the information about the files in the synchronized
 // directory of the local file system.
-type State struct {
+type Nodes struct {
 	ByID            map[ID]*Node
 	ByIno           map[uint64]*Node
 	ScansInProgress int
@@ -25,51 +27,46 @@ type Node struct {
 	Ino      uint64 // 0 means unknown
 	ParentID ID
 	Name     string
-	Type     Type
+	Type     types.Type
 	// TODO executable bit, {c,m,birth}time
 }
 
 // ID is a synthetic number for identifying a node.
 type ID uint64
 
-// Type is used to differentiate files to directories.
-type Type int
+// RootID is the identifier for the root (ie, the synchronized directory).
+const RootID ID = 1
 
-const (
-	UnknownType Type = iota
-	FileType
-	DirType
-)
+// nextID is the next available identifier to assign to a new node.
+var nextID ID = RootID + 1 // 0 is for unknown
 
-var nextID ID = 2 // 0 = unknown, and 1 is reserved for the root
-const rootID ID = 1
-
-// NewState creates a new state.
-func NewState() *State {
-	state := &State{
+// NewNodes creates a new state for managing nodes (data about files or
+// directories on the local file system).
+func NewNodes() *Nodes {
+	nodes := &Nodes{
 		ByID:            make(map[ID]*Node),
 		ByIno:           make(map[uint64]*Node),
 		ScansInProgress: 0,
 	}
 	root := &Node{
-		ID:       rootID,
-		ParentID: rootID,
+		ID:       RootID,
+		ParentID: RootID,
 		Name:     "",
-		Type:     DirType,
+		Type:     types.DirType,
 	}
-	state.Upsert(root)
-	return state
+	nodes.Upsert(root)
+	return nodes
 }
 
 // Root returns the node for the root of the synchronized directory.
-func (state *State) Root() *Node {
-	return state.ByID[rootID]
+func (nodes *Nodes) Root() *Node {
+	return nodes.ByID[RootID]
 }
 
 // ByPath returns the node with the given path (if it exists).
-func (state *State) ByPath(path string) (*Node, error) {
+func (nodes *Nodes) ByPath(path string) (*Node, error) {
 	parts := strings.Split(path, string(filepath.Separator))
-	node := state.Root()
+	node := nodes.Root()
 	for {
 		if node == nil {
 			return nil, errors.New("Not found")
@@ -85,7 +82,7 @@ func (state *State) ByPath(path string) (*Node, error) {
 		// TODO optimize me
 		parentID := node.ID
 		node = nil
-		for _, n := range state.ByID {
+		for _, n := range nodes.ByID {
 			if n.Name == part && n.ParentID == parentID {
 				node = n
 			}
@@ -93,35 +90,35 @@ func (state *State) ByPath(path string) (*Node, error) {
 	}
 }
 
-// Upsert will add or update the given node in the state.
-func (state *State) Upsert(n *Node) {
+// Upsert will add or update the given node in the nodes.
+func (nodes *Nodes) Upsert(n *Node) {
 	if n.Ino != 0 {
-		if was, ok := state.ByIno[n.Ino]; ok {
+		if was, ok := nodes.ByIno[n.Ino]; ok {
 			n.ID = was.ID
 		}
-		state.ByIno[n.Ino] = n
+		nodes.ByIno[n.Ino] = n
 	}
 	if n.ID == 0 {
 		n.ID = nextID
 		nextID++
 	}
-	state.ByID[n.ID] = n
+	nodes.ByID[n.ID] = n
 }
 
 // CheckInvariants checks a few properties that should always be true. It can
-// be used to detect bugs in the state.Local implementation.
-func (state *State) CheckInvariants() error {
-	for id, n := range state.ByID {
+// be used to detect bugs in the nodes.Local implementation.
+func (nodes *Nodes) CheckInvariants() error {
+	for id, n := range nodes.ByID {
 		if n.ID != id {
 			return fmt.Errorf("local node %#v should have id %v", n, id)
 		}
 	}
-	for ino, n := range state.ByIno {
+	for ino, n := range nodes.ByIno {
 		if n.Ino != ino {
 			return fmt.Errorf("local node %#v should have ino %v", n, ino)
 		}
 	}
-	for _, n := range state.ByID {
+	for _, n := range nodes.ByID {
 		if n.ID > 1 && n.ID == n.ParentID {
 			return fmt.Errorf("local node %#v should not be its own parent", n)
 		}
@@ -130,12 +127,12 @@ func (state *State) CheckInvariants() error {
 }
 
 // CheckEventualConsistency checks properties that should be true if a stable
-// state is reached, ie when no changes are made to the local file system, and
+// nodes is reached, ie when no changes are made to the local file system, and
 // we wait that the desktop client says it is synchronized. Then, properties
 // like all nodes have a type that is file or directory, not unknown, should be
 // true.
-func (state *State) CheckEventualConsistency() error {
-	for _, n := range state.ByID {
+func (nodes *Nodes) CheckEventualConsistency() error {
+	for _, n := range nodes.ByID {
 		if n.ID <= 0 {
 			return fmt.Errorf("local node %#v should have an id > 0", n)
 		}
@@ -145,62 +142,62 @@ func (state *State) CheckEventualConsistency() error {
 		if n.ParentID <= 0 {
 			return fmt.Errorf("local node %#v should have a parentID > 0", n)
 		}
-		if _, ok := state.ByID[n.ParentID]; !ok {
+		if _, ok := nodes.ByID[n.ParentID]; !ok {
 			return fmt.Errorf("local node %#v should have a parent", n)
 		}
-		if n.Name == "" && n.ID != rootID {
+		if n.Name == "" && n.ID != RootID {
 			return fmt.Errorf("local node %#v should have a name", n)
 		}
-		if n.Type != FileType && n.Type != DirType {
+		if n.Type != types.FileType && n.Type != types.DirType {
 			return fmt.Errorf("local node %#v should be a file or directory", n)
 		}
 	}
-	return state.checkTree()
+	return nodes.checkTree()
 }
 
 // checkTree is a naive way to check that we can reach all the nodes starting
 // from a root.
-func (state *State) checkTree() error {
+func (nodes *Nodes) checkTree() error {
 	inTree := map[ID]struct{}{
-		rootID: {},
+		RootID: {},
 	}
-	nodes := make(map[ID]*Node, len(state.ByID))
-	for id, n := range state.ByID {
-		nodes[id] = n
+	set := make(map[ID]*Node, len(nodes.ByID))
+	for id, n := range nodes.ByID {
+		set[id] = n
 	}
 
 	for {
-		nb := len(nodes)
+		nb := len(set)
 		if nb == 0 {
 			return nil
 		}
-		for id, n := range nodes {
+		for id, n := range set {
 			if _, ok := inTree[n.ParentID]; ok {
 				inTree[id] = struct{}{}
-				delete(nodes, id)
+				delete(set, id)
 			}
 		}
-		if nb == len(nodes) {
-			return fmt.Errorf("local is not a tree: %v\n", nodes)
+		if nb == len(set) {
+			return fmt.Errorf("local is not a tree: %v\n", set)
 		}
 	}
 }
 
 // PrintTree can be used for debug.
-func (state *State) PrintTree() {
+func (nodes *Nodes) PrintTree() {
 	fmt.Printf("---\n")
-	state.printTree(state.Root(), 0)
+	nodes.printTree(nodes.Root(), 0)
 	fmt.Printf("---\n")
 }
 
-func (state *State) printTree(node *Node, indent int) {
+func (nodes *Nodes) printTree(node *Node, indent int) {
 	for i := 0; i < indent; i++ {
 		fmt.Print("  ")
 	}
 	fmt.Printf("- %#v\n", node)
-	for _, n := range state.ByID {
+	for _, n := range nodes.ByID {
 		if n.ParentID == node.ID && n != node { // n != node is needed to avoid looping on the root
-			state.printTree(n, indent+1)
+			nodes.printTree(n, indent+1)
 		}
 	}
 }

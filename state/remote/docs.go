@@ -6,8 +6,8 @@ import (
 	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
-// State is keeping the information about the files on the Cozy.
-type State struct {
+// Docs is keeping the information about the files on the Cozy.
+type Docs struct {
 	ByID            map[ID]*Doc
 	Seq             *Seq
 	FetchingChanges bool
@@ -35,20 +35,20 @@ func (id ID) IsDesignDoc() bool {
 // Rev is used by CouchDB to avoid conflicts.
 type Rev string
 
-// NewState creates a new state.
-func NewState() *State {
-	return &State{
+// NewDocs creates a new docs.
+func NewDocs() *Docs {
+	return &Docs{
 		ByID: make(map[ID]*Doc),
 		Seq:  nil,
 	}
 }
 
-// Upsert will add or update the given doc in the state.
-func (state *State) Upsert(doc *Doc) {
-	state.ByID[doc.ID] = doc
+// Upsert will add or update the given doc in the docs.
+func (docs *Docs) Upsert(doc *Doc) {
+	docs.ByID[doc.ID] = doc
 }
 
 // MarkAsDeleted is used to mark a document as deleted.
-func (state *State) MarkAsDeleted(id ID) {
-	delete(state.ByID, id)
+func (docs *Docs) MarkAsDeleted(id ID) {
+	delete(docs.ByID, id)
 }

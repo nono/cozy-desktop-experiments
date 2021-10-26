@@ -5,7 +5,7 @@ type EventStart struct{}
 
 // Update is required by Event interface.
 func (e EventStart) Update(state *State) []Command {
-	state.Remote.Refreshing = true
+	state.Docs.Refreshing = true
 	return []Command{
 		CmdStat{"."},
 		CmdRefreshToken{},

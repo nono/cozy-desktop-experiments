@@ -3,11 +3,12 @@ package common
 import (
 	"github.com/nono/cozy-desktop-experiments/state/local"
 	"github.com/nono/cozy-desktop-experiments/state/remote"
+	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
-// State is keeping the information that links the local file system with the
+// Links is keeping the information that links the local file system with the
 // remote Cozy.
-type State struct {
+type Links struct {
 	ByID map[ID]*Link
 }
 
@@ -22,23 +23,26 @@ type Link struct {
 	RemoteID remote.ID
 	ParentID ID
 	Name     string
-	Type     Type
+	Type     types.Type
 }
 
 // ID is a synthetic number for identifying a node.
 type ID uint64
 
-// Type is used to differentiate files to directories.
-type Type int
+// RootID is the identifier for the root.
+const RootID ID = 1
 
-const (
-	FileType Type = iota + 1
-	DirType
-)
-
-// NewState creates a new state.
-func NewState() *State {
-	return &State{
-		ByID: make(map[ID]*Link),
+// NewLinks creates a new state.
+func NewLinks() *Links {
+	root := &Link{
+		ID:       RootID,
+		LocalID:  local.RootID,
+		RemoteID: remote.RootID,
+		ParentID: RootID,
+		Name:     "",
+		Type:     types.DirType,
+	}
+	return &Links{
+		ByID: map[ID]*Link{RootID: root},
 	}
 }

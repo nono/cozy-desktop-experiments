@@ -11,32 +11,32 @@ import (
 // from the notified events. And the decisions to which commands to send is
 // based on this state.
 type State struct {
-	Local  *local.State
-	Remote *remote.State
-	Common *common.State
-	Clock  types.Clock
+	Links *common.Links
+	Nodes *local.Nodes
+	Docs  *remote.Docs
+	Clock types.Clock
 }
 
 // Sync is the event loop to update the state and send commands, via the
 // platform.
 func Sync(platform Platform) error {
 	state := &State{
-		Local:  local.NewState(),
-		Remote: remote.NewState(),
-		Common: common.NewState(),
+		Links: common.NewLinks(),
+		Nodes: local.NewNodes(),
+		Docs:  remote.NewDocs(),
 	}
 	cmds := EventStart{}.Update(state)
 	for {
 		for _, cmd := range cmds {
 			if _, ok := cmd.(CmdStop); ok {
-				return state.Local.CheckEventualConsistency()
+				return state.Nodes.CheckEventualConsistency()
 			}
 			platform.Exec(cmd)
 		}
 		state.Clock++
 		event := platform.NextEvent()
 		cmds = event.Update(state)
-		if err := state.Local.CheckInvariants(); err != nil {
+		if err := state.Nodes.CheckInvariants(); err != nil {
 			return err
 		}
 	}

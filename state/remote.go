@@ -24,11 +24,11 @@ type EventTokenRefreshed struct {
 // Update is required by Event interface.
 func (e EventTokenRefreshed) Update(state *State) []Command {
 	// TODO handle error
-	state.Remote.Refreshing = false
-	state.Remote.RefreshedAt = state.Clock
-	state.Remote.FetchingChanges = true
+	state.Docs.Refreshing = false
+	state.Docs.RefreshedAt = state.Clock
+	state.Docs.FetchingChanges = true
 	return []Command{
-		CmdChanges{state.Remote.Seq},
+		CmdChanges{state.Docs.Seq},
 	}
 }
 
@@ -58,19 +58,19 @@ type EventChangesDone struct {
 // Update is required by Event interface.
 func (e EventChangesDone) Update(state *State) []Command {
 	// TODO handle error
-	state.Remote.Seq = e.Seq
+	state.Docs.Seq = e.Seq
 	for _, change := range e.Docs {
 		if change.Deleted {
-			state.Remote.MarkAsDeleted(change.Doc.ID)
+			state.Docs.MarkAsDeleted(change.Doc.ID)
 		} else {
-			state.Remote.Upsert(change.Doc)
+			state.Docs.Upsert(change.Doc)
 		}
 	}
 	if e.Pending > 0 {
 		return []Command{
-			CmdChanges{state.Remote.Seq},
+			CmdChanges{state.Docs.Seq},
 		}
 	}
-	state.Remote.FetchingChanges = false
+	state.Docs.FetchingChanges = false
 	return []Command{}
 }

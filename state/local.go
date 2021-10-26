@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/nono/cozy-desktop-experiments/state/local"
+	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
 // CmdStat is a command for making a stat call on a file. It allows to know if
@@ -31,10 +32,10 @@ type EventStatDone struct {
 // Update is required by Event interface.
 func (e EventStatDone) Update(state *State) []Command {
 	if e.Cmd.Path == "." && e.Error == nil && e.Info.IsDir() {
-		node := state.Local.Root()
+		node := state.Nodes.Root()
 		node.Ino = getIno(e.Info)
-		state.Local.Upsert(node)
-		state.Local.ScansInProgress++
+		state.Nodes.Upsert(node)
+		state.Nodes.ScansInProgress++
 		return []Command{CmdScan{"."}}
 	}
 	return []Command{CmdStop{}}
@@ -62,29 +63,29 @@ type EventScanDone struct {
 
 // Update is required by Event interface.
 func (e EventScanDone) Update(state *State) []Command {
-	state.Local.ScansInProgress--
+	state.Nodes.ScansInProgress--
 	cmds := []Command{}
 	var parentID local.ID
 	if len(e.Entries) > 0 {
-		if parent, err := state.Local.ByPath(e.Path); err == nil {
+		if parent, err := state.Nodes.ByPath(e.Path); err == nil {
 			parentID = parent.ID
 		}
 	}
 	for _, entry := range e.Entries {
-		node := &local.Node{ParentID: parentID, Name: entry.Name(), Type: local.FileType}
+		node := &local.Node{ParentID: parentID, Name: entry.Name(), Type: types.FileType}
 		if info, err := entry.Info(); err == nil {
 			node.Ino = getIno(info)
 		}
 		if entry.IsDir() {
-			state.Local.ScansInProgress++
+			state.Nodes.ScansInProgress++
 			path := filepath.Join(e.Path, node.Name)
 			cmds = append(cmds, CmdScan{path})
-			node.Type = local.DirType
+			node.Type = types.DirType
 		}
-		state.Local.Upsert(node)
+		state.Nodes.Upsert(node)
 	}
-	if state.Local.ScansInProgress == 0 {
-		state.Local.PrintTree()
+	if state.Nodes.ScansInProgress == 0 {
+		state.Nodes.PrintTree()
 		return []Command{CmdStop{}}
 	}
 	return cmds
