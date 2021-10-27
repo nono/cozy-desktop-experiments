@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nono/cozy-desktop-experiments/state/remote"
+	"github.com/nono/cozy-desktop-experiments/state/types"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 )
@@ -79,7 +80,7 @@ func (cmp *cmpClient) Init(t *rapid.T) {
 	cmp.fake.AddInitialDocs(changes.Docs...)
 	cmp.fake.MatchSequence(changes.Seq)
 	cmp.parents = []*remote.Doc{
-		{ID: remote.RootID, Type: remote.Directory},
+		{ID: remote.RootID, Type: types.DirType},
 	}
 }
 

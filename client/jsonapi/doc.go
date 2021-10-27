@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/nono/cozy-desktop-experiments/state/remote"
+	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
 // Doc describes a JSON-API document.
@@ -20,14 +21,14 @@ type List struct {
 
 // Data describes an item inside data.
 type Data struct {
-	ID   remote.ID `json:"id"`
+	ID   string `json:"id"`
 	Meta struct {
-		Rev remote.Rev `json:"rev"`
+		Rev string `json:"rev"`
 	} `json:"meta"`
 	Attributes struct {
-		Type  string    `json:"type"`
-		Name  string    `json:"name"`
-		DirID remote.ID `json:"dir_id"`
+		Type  string `json:"type"`
+		Name  string `json:"name"`
+		DirID string `json:"dir_id"`
 	} `json:"attributes"`
 }
 
@@ -39,11 +40,11 @@ func ParseDoc(r io.Reader) (*remote.Doc, error) {
 		return nil, err
 	}
 	return &remote.Doc{
-		ID:    doc.Data.ID,
-		Rev:   doc.Data.Meta.Rev,
-		Type:  doc.Data.Attributes.Type,
+		ID:    remote.ID(doc.Data.ID),
+		Rev:   remote.Rev(doc.Data.Meta.Rev),
+		Type:  ConvertType(doc.Data.Attributes.Type),
 		Name:  doc.Data.Attributes.Name,
-		DirID: doc.Data.Attributes.DirID,
+		DirID: remote.ID(doc.Data.Attributes.DirID),
 	}, nil
 }
 
@@ -57,12 +58,24 @@ func ParseList(r io.Reader) ([]*remote.Doc, error) {
 	docs := make([]*remote.Doc, 0, len(list.Data))
 	for _, doc := range list.Data {
 		docs = append(docs, &remote.Doc{
-			ID:    doc.ID,
-			Rev:   doc.Meta.Rev,
-			Type:  doc.Attributes.Type,
+			ID:    remote.ID(doc.ID),
+			Rev:   remote.Rev(doc.Meta.Rev),
+			Type:  ConvertType(doc.Attributes.Type),
 			Name:  doc.Attributes.Name,
-			DirID: doc.Attributes.DirID,
+			DirID: remote.ID(doc.Attributes.DirID),
 		})
 	}
 	return docs, nil
+}
+
+// ConvertType converts a type (file or directory) from a string to the
+// types.Type enum.
+func ConvertType(raw string) types.Type {
+	switch raw {
+	case "directory":
+		return types.DirType
+	case "file":
+		return types.FileType
+	}
+	return types.UnknownType
 }

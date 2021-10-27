@@ -136,7 +136,7 @@ func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 			doc.Name = name
 		}
 		if typ, ok := result.Doc["type"].(string); ok {
-			doc.Type = typ
+			doc.Type = jsonapi.ConvertType(typ)
 		}
 		if dirID, ok := result.Doc["dir_id"].(string); ok {
 			doc.DirID = remote.ID(dirID)
@@ -256,15 +256,16 @@ func (c *Client) DocsByID() map[remote.ID]*remote.Doc {
 	}
 	byID := map[remote.ID]*remote.Doc{}
 	for _, row := range list.Rows {
-		if row.Doc.ID.IsDesignDoc() {
+		id := remote.ID(row.Doc.ID)
+		if id.IsDesignDoc() {
 			continue
 		}
 		doc := &remote.Doc{
-			ID:    row.Doc.ID,
-			Rev:   row.Doc.Rev,
-			Type:  row.Doc.Type,
+			ID:    id,
+			Rev:   remote.Rev(row.Doc.Rev),
+			Type:  jsonapi.ConvertType(row.Doc.Type),
 			Name:  row.Doc.Name,
-			DirID: row.Doc.DirID,
+			DirID: remote.ID(row.Doc.DirID),
 		}
 		byID[doc.ID] = doc
 	}
@@ -277,11 +278,11 @@ type allDocsResponse struct {
 
 type allDocsRow struct {
 	Doc struct {
-		ID    remote.ID  `json:"_id"`
-		Rev   remote.Rev `json:"_rev"`
-		Type  string     `json:"type"`
-		Name  string     `json:"name"`
-		DirID remote.ID  `json:"dir_id"`
+		ID    string `json:"_id"`
+		Rev   string `json:"_rev"`
+		Type  string `json:"type"`
+		Name  string `json:"name"`
+		DirID string `json:"dir_id"`
 	} `json:"doc"`
 }
 

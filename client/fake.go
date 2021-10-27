@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nono/cozy-desktop-experiments/state/remote"
+	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
 // https://github.com/cozy/cozy-stack/blob/master/model/vfs/vfs.go#L24
@@ -64,12 +65,12 @@ func (f *Fake) AddInitialDocs(changed ...*remote.ChangedDoc) {
 		root := &remote.Doc{
 			ID:   remote.RootID,
 			Rev:  f.GenerateRev(remote.RootID, 1),
-			Type: remote.Directory,
+			Type: types.DirType,
 		}
 		trash := &remote.Doc{
 			ID:    remote.TrashID,
 			Rev:   f.GenerateRev(remote.TrashID, 1),
-			Type:  remote.Directory,
+			Type:  types.DirType,
 			Name:  remote.TrashName,
 			DirID: root.ID,
 		}
@@ -140,7 +141,7 @@ func (f *Fake) CreateDir(parentID remote.ID, name string) (*remote.Doc, error) {
 	dir := &remote.Doc{
 		ID:    id,
 		Rev:   f.GenerateRev(id, 1),
-		Type:  remote.Directory,
+		Type:  types.DirType,
 		Name:  name,
 		DirID: parentID,
 	}
@@ -199,14 +200,14 @@ func (f *Fake) CheckInvariants() error {
 	if !ok {
 		return errors.New("root is missing")
 	}
-	if root.Type != remote.Directory {
+	if root.Type != types.DirType {
 		return errors.New("root is not a directory")
 	}
 	trash, ok := f.ByID[remote.TrashID]
 	if !ok {
 		return errors.New("trash is missing")
 	}
-	if trash.Type != remote.Directory {
+	if trash.Type != types.DirType {
 		return errors.New("trash is not a directory")
 	}
 	if trash.Name != remote.TrashName {
@@ -246,7 +247,7 @@ func (f *Fake) checkCanMoveUpToRoot(doc *remote.Doc, remaining int) error {
 	if !ok {
 		return fmt.Errorf("%#v parent is missing", doc)
 	}
-	if parent.Type != remote.Directory {
+	if parent.Type != types.DirType {
 		return fmt.Errorf("%#v is expected to be a directory", parent)
 	}
 

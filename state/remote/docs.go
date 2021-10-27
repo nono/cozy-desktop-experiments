@@ -19,7 +19,7 @@ type Docs struct {
 type Doc struct {
 	ID    ID
 	Rev   Rev
-	Type  string
+	Type  types.Type
 	Name  string
 	DirID ID
 }
