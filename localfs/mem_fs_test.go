@@ -15,7 +15,7 @@ func TestMemFS(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		fs := NewMemFS()
 		require.NoError(t, fstest.TestFS(fs))
-		require.NoError(t, fs.(*memFS).CheckInvariants())
+		require.NoError(t, fs.(*MemFS).CheckInvariants())
 	})
 
 	t.Run("basic", func(t *testing.T) {
@@ -24,7 +24,7 @@ func TestMemFS(t *testing.T) {
 		require.NoError(t, fs.Mkdir("foo/bar"))
 		require.NoError(t, fs.Mkdir("foo/bar/baz"))
 		require.NoError(t, fstest.TestFS(fs, "foo", "foo/bar", "foo/bar/baz"))
-		require.NoError(t, fs.(*memFS).CheckInvariants())
+		require.NoError(t, fs.(*MemFS).CheckInvariants())
 	})
 }
 
@@ -41,8 +41,8 @@ var tempDir string
 var count int
 
 type cmpFS struct {
-	dir     dirFS
-	mem     *memFS
+	dir     DirFS
+	mem     *MemFS
 	parents []string
 }
 
@@ -50,8 +50,8 @@ func (cmp *cmpFS) Init(t *rapid.T) {
 	count++
 	baseDir := fmt.Sprintf("%s/%d", tempDir, count)
 	require.NoError(t, os.Mkdir(baseDir, 0750))
-	cmp.dir = NewDirFS(baseDir).(dirFS)
-	cmp.mem = NewMemFS().(*memFS)
+	cmp.dir = NewDirFS(baseDir).(DirFS)
+	cmp.mem = NewMemFS().(*MemFS)
 	cmp.parents = []string{"."}
 }
 

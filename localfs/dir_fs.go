@@ -15,13 +15,13 @@ import (
 // NewDirFS returns a local.FS that makes changes to the given Cozy directory
 // on the local disk.
 func NewDirFS(dir string) local.FS {
-	return dirFS(dir)
+	return DirFS(dir)
 }
 
-type dirFS string
+type DirFS string
 
 // Open is required by the local.FS interface.
-func (dir dirFS) Open(path string) (fs.File, error) {
+func (dir DirFS) Open(path string) (fs.File, error) {
 	if !fs.ValidPath(path) {
 		return nil, &os.PathError{Op: "open", Path: path, Err: os.ErrInvalid}
 	}
@@ -34,7 +34,7 @@ func (dir dirFS) Open(path string) (fs.File, error) {
 }
 
 // Stat is required by the local.FS interface.
-func (dir dirFS) Stat(path string) (fs.FileInfo, error) {
+func (dir DirFS) Stat(path string) (fs.FileInfo, error) {
 	if !fs.ValidPath(path) {
 		return nil, &os.PathError{Op: "stat", Path: path, Err: os.ErrInvalid}
 	}
@@ -47,7 +47,7 @@ func (dir dirFS) Stat(path string) (fs.FileInfo, error) {
 }
 
 // ReadDir is required by the local.FS interface.
-func (dir dirFS) ReadDir(path string) ([]fs.DirEntry, error) {
+func (dir DirFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if !fs.ValidPath(path) {
 		return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 	}
@@ -60,7 +60,7 @@ func (dir dirFS) ReadDir(path string) ([]fs.DirEntry, error) {
 }
 
 // Mkdir is required by the local.FS interface.
-func (dir dirFS) Mkdir(path string) error {
+func (dir DirFS) Mkdir(path string) error {
 	if !fs.ValidPath(path) {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
@@ -69,7 +69,7 @@ func (dir dirFS) Mkdir(path string) error {
 }
 
 // RemoveAll is required by the local.FS interface.
-func (dir dirFS) RemoveAll(path string) error {
+func (dir DirFS) RemoveAll(path string) error {
 	if !fs.ValidPath(path) || path == "." {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
@@ -77,15 +77,15 @@ func (dir dirFS) RemoveAll(path string) error {
 	return os.RemoveAll(abspath)
 }
 
-// ToMemFS will create a memFS with the same files and directories. It can be
+// ToMemFS will create a MemFS with the same files and directories. It can be
 // useful for testing purpose.
-func (dir dirFS) ToMemFS() (*memFS, error) {
-	mem := NewMemFS().(*memFS)
+func (dir DirFS) ToMemFS() (*MemFS, error) {
+	mem := NewMemFS().(*MemFS)
 	err := dir.addToMemFS(mem, ".")
 	return mem, err
 }
 
-func (dir dirFS) addToMemFS(mem *memFS, path string) error {
+func (dir DirFS) addToMemFS(mem *MemFS, path string) error {
 	entries, err := dir.ReadDir(path)
 	if err != nil {
 		return err
@@ -105,4 +105,4 @@ func (dir dirFS) addToMemFS(mem *memFS, path string) error {
 	return nil
 }
 
-var _ fs.FS = dirFS(".")
+var _ fs.FS = DirFS(".")

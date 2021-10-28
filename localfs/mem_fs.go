@@ -26,12 +26,12 @@ func NewMemFS() local.FS {
 		},
 		path: ".",
 	}
-	return &memFS{
+	return &MemFS{
 		ByPath: map[string]*memDir{".": baseDir},
 	}
 }
 
-type memFS struct {
+type MemFS struct {
 	ByPath map[string]*memDir
 }
 
@@ -108,7 +108,7 @@ func (info memFileInfo) IsDir() bool        { return info.mode.IsDir() }
 func (info memFileInfo) Sys() interface{}   { return info.sys }
 
 // Open is required by the local.FS interface.
-func (mem *memFS) Open(path string) (fs.File, error) {
+func (mem *MemFS) Open(path string) (fs.File, error) {
 	path = strings.TrimSuffix(path, "./")
 	dir, ok := mem.ByPath[path]
 	if !ok {
@@ -118,7 +118,7 @@ func (mem *memFS) Open(path string) (fs.File, error) {
 }
 
 // Stat is required by the local.FS interface.
-func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
+func (mem *MemFS) Stat(path string) (fs.FileInfo, error) {
 	if !validPath(path) {
 		return nil, &os.PathError{Op: "stat", Path: path, Err: os.ErrInvalid}
 	}
@@ -131,7 +131,7 @@ func (mem *memFS) Stat(path string) (fs.FileInfo, error) {
 }
 
 // ReadDir is required by the local.FS interface.
-func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
+func (mem *MemFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	if !validPath(path) {
 		return nil, &os.PathError{Op: "readDir", Path: path, Err: os.ErrInvalid}
 	}
@@ -146,7 +146,7 @@ func (mem *memFS) ReadDir(path string) ([]fs.DirEntry, error) {
 }
 
 // Mkdir is required by the local.FS interface.
-func (mem *memFS) Mkdir(path string) error {
+func (mem *MemFS) Mkdir(path string) error {
 	if !validPath(path) || path == "." || endWithSlash(path) {
 		return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrInvalid}
 	}
@@ -174,7 +174,7 @@ func (mem *memFS) Mkdir(path string) error {
 }
 
 // RemoveAll is required by the local.FS interface.
-func (mem *memFS) RemoveAll(path string) error {
+func (mem *MemFS) RemoveAll(path string) error {
 	if !validPath(path) || path == "." {
 		return &os.PathError{Op: "removeAll", Path: path, Err: os.ErrInvalid}
 	}
@@ -208,7 +208,7 @@ func (mem *memFS) RemoveAll(path string) error {
 
 // removeDescendants remove every thing inside a directory (files and
 // sub-directories).
-func (mem *memFS) removeDescendants(dir *memDir) {
+func (mem *MemFS) removeDescendants(dir *memDir) {
 	for _, child := range dir.children {
 		if child.IsDir() {
 			mem.removeDescendants(child.(*memDir))
@@ -220,7 +220,7 @@ func (mem *memFS) removeDescendants(dir *memDir) {
 }
 
 // nameAndParent takes a path and return the name, and the parent directory.
-func (mem *memFS) nameAndParent(path string) (string, *memDir, bool) {
+func (mem *MemFS) nameAndParent(path string) (string, *memDir, bool) {
 	parentPath, name := filepath.Split(path)
 	if parentPath == "" || parentPath == "/" {
 		parentPath = "."
@@ -232,8 +232,8 @@ func (mem *memFS) nameAndParent(path string) (string, *memDir, bool) {
 }
 
 // CheckInvariants check some properties of the mock. It can be used to detect
-// some bugs in the memFS implementation.
-func (mem *memFS) CheckInvariants() error {
+// some bugs in the MemFS implementation.
+func (mem *MemFS) CheckInvariants() error {
 	if _, ok := mem.ByPath["."]; !ok {
 		return errors.New("root is missing")
 	}
@@ -255,7 +255,7 @@ func (mem *memFS) CheckInvariants() error {
 }
 
 // NextIno returns the next free inode number that can be used.
-func (mem *memFS) NextIno() uint64 {
+func (mem *MemFS) NextIno() uint64 {
 	return uint64(len(mem.ByPath) + 1) // TODO
 }
 
@@ -270,7 +270,7 @@ func endWithSlash(path string) bool {
 	return path[len(path)-1] == filepath.Separator
 }
 
-var _ fs.FS = &memFS{}
+var _ fs.FS = &MemFS{}
 var _ fs.DirEntry = &memFile{}
 var _ fs.DirEntry = &memDir{}
 var _ fs.File = &memFileHandler{}
