@@ -105,7 +105,7 @@ func (f *Fake) MatchSequence(seq remote.Seq) {
 }
 
 // Changes is required by the remote.Client interface.
-func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
+func (f *Fake) Changes(seq *remote.Seq, limit int, skipTrashed bool) (*remote.ChangesResponse, error) {
 	since := 0
 	if seq != nil {
 		since = seq.ExtractGeneration()
@@ -120,9 +120,17 @@ func (f *Fake) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 		if c.Skip {
 			continue
 		}
+		if skipTrashed && (c.Deleted || f.isInTrash(c.ChangedDoc.Doc)) {
+			continue
+		}
 		docs = append(docs, c.ChangedDoc)
 	}
-	return &remote.ChangesResponse{Docs: docs, Seq: f.GenerateSeq(lastSeq), Pending: 0}, nil
+	pending := 0
+	if len(docs) > limit {
+		pending = len(docs) - limit
+		docs = docs[:limit]
+	}
+	return &remote.ChangesResponse{Docs: docs, Seq: f.GenerateSeq(lastSeq), Pending: pending}, nil
 }
 
 // CreateDir is required by the remote.Client interface.

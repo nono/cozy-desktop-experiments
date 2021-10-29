@@ -89,7 +89,7 @@ type changesResponse struct {
 }
 
 type changesResult struct {
-	ID      remote.ID              `json:"id"`
+	ID      string                 `json:"id"`
 	Deleted bool                   `json:"deleted"`
 	Doc     map[string]interface{} `json:"doc"`
 }
@@ -97,15 +97,20 @@ type changesResult struct {
 // Changes is required by the remote.Client interface.
 //
 // Note: the design docs are ignored
-func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
-	// TODO use the trick from https://github.com/apache/couchdb/discussions/3774
+func (c *Client) Changes(seq *remote.Seq, limit int, skipTrashed bool) (*remote.ChangesResponse, error) {
 	params := url.Values{
 		"include_docs": {"true"},
+		"fields":       {"_rev,name,type,dir_id"},
+		"limit":        {fmt.Sprintf("%d", limit)},
 	}
 	if seq != nil {
 		params.Add("since", string(*seq))
 	}
-	path := fmt.Sprintf("/data/io.cozy.files/_changes?%s", params.Encode())
+	if skipTrashed {
+		params.Add("skip_deleted", "true")
+		params.Add("skip_trashed", "true")
+	}
+	path := fmt.Sprintf("/files/_changes?%s", params.Encode())
 	res, err := c.NewRequest(http.MethodGet, path).Do()
 	if err != nil {
 		return nil, err
@@ -123,11 +128,8 @@ func (c *Client) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
 	}
 	docs := make([]*remote.ChangedDoc, 0, len(changes.Results))
 	for _, result := range changes.Results {
-		if result.ID.IsDesignDoc() {
-			continue
-		}
 		doc := &remote.Doc{
-			ID: result.ID,
+			ID: remote.ID(result.ID),
 		}
 		if rev, ok := result.Doc["_rev"].(string); ok {
 			doc.Rev = remote.Rev(rev)

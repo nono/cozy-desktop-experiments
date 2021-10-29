@@ -74,7 +74,7 @@ func (cmp *cmpClient) Init(t *rapid.T) {
 	cmp.client = New(addr).(*Client)
 	require.NoError(t, cmp.client.Register())
 	require.NoError(t, inst.CreateAccessToken(cmp.client))
-	changes, err := cmp.client.Changes(nil)
+	changes, err := cmp.client.Changes(nil, 10_000, false)
 	require.NoError(t, err)
 	cmp.fake = NewFake(addr).(*Fake)
 	cmp.fake.AddInitialDocs(changes.Docs...)
@@ -89,8 +89,8 @@ func (cmp *cmpClient) Cleanup() {
 }
 
 func (cmp *cmpClient) Changes(t *rapid.T) {
-	left, errl := cmp.client.Changes(cmp.seq)
-	right, errr := cmp.fake.Changes(cmp.seq)
+	left, errl := cmp.client.Changes(cmp.seq, 10, false)
+	right, errr := cmp.fake.Changes(cmp.seq, 10, false)
 	require.Equal(t, errl == nil, errr == nil)
 	if errl == nil && errr == nil {
 		require.Equal(t, len(left.Docs), len(right.Docs))

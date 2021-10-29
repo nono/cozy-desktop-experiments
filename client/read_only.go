@@ -18,8 +18,8 @@ type ReadOnly struct {
 }
 
 // Changes is required by the remote.Client interface.
-func (ro *ReadOnly) Changes(seq *remote.Seq) (*remote.ChangesResponse, error) {
-	return ro.Fake.Changes(seq)
+func (ro *ReadOnly) Changes(seq *remote.Seq, limit int, skipTrashed bool) (*remote.ChangesResponse, error) {
+	return ro.Fake.Changes(seq, limit, skipTrashed)
 }
 
 // CreateDir is required by the remote.Client interface.

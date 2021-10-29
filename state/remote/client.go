@@ -9,9 +9,7 @@ import (
 // cozy-stack to manipulate files.
 type Client interface {
 	// Changes is used to request the changes feed since a sequence number.
-	// TODO add a limit option
-	// TODO add an option to skip deleted docs
-	Changes(seq *Seq) (*ChangesResponse, error)
+	Changes(seq *Seq, limit int, skipTrashed bool) (*ChangesResponse, error)
 
 	// CreateDir will create a directory on the Cozy.
 	CreateDir(parentID ID, name string) (*Doc, error)

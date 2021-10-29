@@ -28,18 +28,20 @@ func (e EventTokenRefreshed) Update(state *State) []Command {
 	state.Docs.RefreshedAt = state.Clock
 	state.Docs.FetchingChanges = true
 	return []Command{
-		CmdChanges{state.Docs.Seq},
+		CmdChanges{Limit: nbChangesPerPage, Seq: state.Docs.Seq, SkipTrashed: true},
 	}
 }
 
 // CmdChanges is a command to fetch the changes feed of the Cozy.
 type CmdChanges struct {
-	Seq *remote.Seq
+	Limit       int
+	Seq         *remote.Seq
+	SkipTrashed bool
 }
 
 // Exec is required by Command interface.
 func (cmd CmdChanges) Exec(platform Platform) {
-	res, err := platform.Client().Changes(cmd.Seq)
+	res, err := platform.Client().Changes(cmd.Seq, cmd.Limit, cmd.SkipTrashed)
 	if err == nil {
 		platform.Notify(EventChangesDone{Docs: res.Docs, Seq: &res.Seq, Pending: res.Pending})
 	} else {
@@ -68,9 +70,11 @@ func (e EventChangesDone) Update(state *State) []Command {
 	}
 	if e.Pending > 0 {
 		return []Command{
-			CmdChanges{state.Docs.Seq},
+			CmdChanges{Limit: nbChangesPerPage, Seq: state.Docs.Seq, SkipTrashed: true},
 		}
 	}
 	state.Docs.FetchingChanges = false
 	return []Command{}
 }
+
+const nbChangesPerPage = 10_000
