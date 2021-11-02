@@ -84,11 +84,10 @@ func (e EventScanDone) Update(state *State) []Command {
 		}
 		state.Nodes.Upsert(node)
 	}
-	if state.Nodes.ScansInProgress == 0 {
-		state.Nodes.PrintTree()
-		return []Command{CmdStop{}}
+	if len(cmds) > 0 {
+		return cmds
 	}
-	return cmds
+	return state.findNextCommand()
 }
 
 // getIno is a small helper function to get the inode number from a fs.FileInfo

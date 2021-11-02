@@ -13,6 +13,7 @@ import (
 // directory of the local file system.
 type Nodes struct {
 	ByID            map[ID]*Node
+	ByParentID      map[ID]map[ID]*Node // parentID -> map of children
 	ByIno           map[uint64]*Node
 	ScansInProgress int
 }
@@ -45,6 +46,7 @@ var nextID ID = RootID + 1 // 0 is for unknown
 func NewNodes() *Nodes {
 	nodes := &Nodes{
 		ByID:            make(map[ID]*Node),
+		ByParentID:      make(map[ID]map[ID]*Node),
 		ByIno:           make(map[uint64]*Node),
 		ScansInProgress: 0,
 	}
@@ -79,11 +81,10 @@ func (nodes *Nodes) ByPath(path string) (*Node, error) {
 		if part == "." {
 			continue
 		}
-		// TODO optimize me
 		parentID := node.ID
 		node = nil
-		for _, n := range nodes.ByID {
-			if n.Name == part && n.ParentID == parentID {
+		for _, n := range nodes.ByParentID[parentID] {
+			if n.Name == part {
 				node = n
 			}
 		}
@@ -101,8 +102,36 @@ func (nodes *Nodes) Upsert(n *Node) {
 	if n.ID == 0 {
 		n.ID = nextID
 		nextID++
+	} else {
+		nodes.detachParent(n.ID)
 	}
 	nodes.ByID[n.ID] = n
+	nodes.attachParent(n)
+}
+
+// Children returns a map of id -> node for the children of the given
+// directory.
+func (nodes *Nodes) Children(parent *Node) map[ID]*Node {
+	return nodes.ByParentID[parent.ID]
+}
+
+// attachParent updates the ByParentID field when a child is added to a
+// directory.
+func (nodes *Nodes) attachParent(child *Node) {
+	children := nodes.ByParentID[child.ParentID]
+	if children == nil {
+		children = make(map[ID]*Node)
+	}
+	children[child.ID] = child
+	nodes.ByParentID[child.ParentID] = children
+}
+
+// attachParent updates the ByParentID field when a child is removed a
+// directory.
+func (nodes *Nodes) detachParent(childID ID) {
+	if was, ok := nodes.ByID[childID]; ok {
+		delete(nodes.ByParentID[was.ParentID], was.ID)
+	}
 }
 
 // CheckInvariants checks a few properties that should always be true. It can
@@ -119,8 +148,25 @@ func (nodes *Nodes) CheckInvariants() error {
 		}
 	}
 	for _, n := range nodes.ByID {
-		if n.ID > 1 && n.ID == n.ParentID {
+		if n.ID == RootID {
+			continue
+		}
+		if n.ID == n.ParentID {
 			return fmt.Errorf("local node %#v should not be its own parent", n)
+		}
+		children, ok := nodes.ByParentID[n.ParentID]
+		if ok {
+			_, ok = children[n.ID]
+		}
+		if !ok {
+			return fmt.Errorf("local node %#v has no parent", n)
+		}
+	}
+	for _, children := range nodes.ByParentID {
+		for id, child := range children {
+			if n, ok := nodes.ByID[id]; !ok || n != child {
+				return fmt.Errorf("invalid indexation ByParentID for %q", id)
+			}
 		}
 	}
 	return nil

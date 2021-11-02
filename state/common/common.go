@@ -9,7 +9,8 @@ import (
 // Links is keeping the information that links the local file system with the
 // remote Cozy.
 type Links struct {
-	ByID map[ID]*Link
+	ByID       map[ID]*Link
+	ByParentID map[ID]map[ID]*Link // parentID -> map of children
 }
 
 // Link is the last known state of a file or directory that was common to a
@@ -43,6 +44,18 @@ func NewLinks() *Links {
 		Type:     types.DirType,
 	}
 	return &Links{
-		ByID: map[ID]*Link{RootID: root},
+		ByID:       map[ID]*Link{RootID: root},
+		ByParentID: make(map[ID]map[ID]*Link),
 	}
+}
+
+// Root returns the link between the local synchronized directory and the root
+// of the Cozy.
+func (links *Links) Root() *Link {
+	return links.ByID[RootID]
+}
+
+// Children returns a map of ID -> link for the children of the given link.
+func (links *Links) Children(parent *Link) map[ID]*Link {
+	return links.ByParentID[parent.ID]
 }

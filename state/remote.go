@@ -74,7 +74,32 @@ func (e EventChangesDone) Update(state *State) []Command {
 		}
 	}
 	state.Docs.FetchingChanges = false
-	return []Command{}
+	return state.findNextCommand()
+}
+
+// CmdSynchronized is a command to let the Cozy know that the client has reach
+// a stable point of synchronization.
+type CmdSynchronized struct {
+}
+
+// Exec is required by Command interface.
+func (cmd CmdSynchronized) Exec(platform Platform) {
+	err := platform.Client().Synchronized()
+	platform.Notify(EventSynchronized{Error: err})
+}
+
+// EventSynchronized is notified when the Cozy has been informed of the
+// synchronization, or the call has failed.
+type EventSynchronized struct {
+	Error error
+}
+
+// Update is required by Event interface.
+func (e EventSynchronized) Update(state *State) []Command {
+	// TODO handle error
+	// TODO continuous synchonization
+	state.Nodes.PrintTree()
+	return []Command{CmdStop{}}
 }
 
 const nbChangesPerPage = 10_000
