@@ -18,11 +18,11 @@ run:
 
 ## lint: enforce a consistent code style and detect code smells
 lint: scripts/golangci-lint
-	@scripts/golangci-lint run -E gofmt -E unconvert -E misspell -E whitespace -E exportloopref -E bodyclose -E exhaustive --max-same-issues 10
+	@scripts/golangci-lint run -E gofmt -E unconvert -E misspell -E whitespace -E exportloopref -E bodyclose -E exhaustive -E nilnil -E bidichk --max-same-issues 10
 .PHONY: lint
 
 scripts/golangci-lint: Makefile
-	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b ./scripts v1.42.1
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b ./scripts v1.43.0
 
 ## unit-tests: run the tests
 unit-tests:
