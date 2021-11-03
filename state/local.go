@@ -34,8 +34,8 @@ func (e EventStatDone) Update(state *State) []Command {
 	if e.Cmd.Path == "." && e.Error == nil && e.Info.IsDir() {
 		node := state.Nodes.Root()
 		node.Ino = getIno(e.Info)
+		node.Status = local.ScanningStatus
 		state.Nodes.Upsert(node)
-		state.Nodes.ScansInProgress++
 		return []Command{CmdScan{"."}}
 	}
 	return []Command{CmdStop{}}
@@ -63,27 +63,31 @@ type EventScanDone struct {
 
 // Update is required by Event interface.
 func (e EventScanDone) Update(state *State) []Command {
-	state.Nodes.ScansInProgress--
 	cmds := []Command{}
-	var parentID local.ID
-	if len(e.Entries) > 0 {
-		if parent, err := state.Nodes.ByPath(e.Path); err == nil {
-			parentID = parent.ID
-		}
+	parent, err := state.Nodes.ByPath(e.Path)
+	if err != nil {
+		// TODO handle error
 	}
 	for _, entry := range e.Entries {
-		node := &local.Node{ParentID: parentID, Name: entry.Name(), Type: types.FileType}
+		node := &local.Node{
+			ParentID: parent.ID,
+			Name:     entry.Name(),
+			Type:     types.FileType,
+			Status:   local.InitialStatus,
+		}
 		if info, err := entry.Info(); err == nil {
 			node.Ino = getIno(info)
 		}
 		if entry.IsDir() {
-			state.Nodes.ScansInProgress++
+			node.Status = local.ScanningStatus
+			// TODO we should limit the number of scans in parallel
 			path := filepath.Join(e.Path, node.Name)
 			cmds = append(cmds, CmdScan{path})
 			node.Type = types.DirType
 		}
 		state.Nodes.Upsert(node)
 	}
+	state.Nodes.MarkAsScanned(parent)
 	if len(cmds) > 0 {
 		return cmds
 	}

@@ -12,10 +12,9 @@ import (
 // Nodes is keeping the information about the files in the synchronized
 // directory of the local file system.
 type Nodes struct {
-	ByID            map[ID]*Node
-	ByParentID      map[ID]map[ID]*Node // parentID -> map of children
-	ByIno           map[uint64]*Node
-	ScansInProgress int
+	ByID       map[ID]*Node
+	ByParentID map[ID]map[ID]*Node // parentID -> map of children
+	ByIno      map[uint64]*Node
 }
 
 // Node is a file or directory on the local file system.
@@ -29,6 +28,7 @@ type Node struct {
 	ParentID ID
 	Name     string
 	Type     types.Type
+	Status   Status
 	// TODO executable bit, {c,m,birth}time
 }
 
@@ -41,20 +41,36 @@ const RootID ID = 1
 // nextID is the next available identifier to assign to a new node.
 var nextID ID = RootID + 1 // 0 is for unknown
 
+// Status describes what operations are in progress on a node to improve the
+// knowledge we have of it. For a directory, we can scan it to find what are
+// its children.
+type Status int
+
+const (
+	// InitialStatus is the default status of a new node
+	InitialStatus Status = iota
+	// ScanningStatus means that we are looking for the direct children of a directory
+	ScanningStatus
+	// ScannedStatus means that we know the direct children, but not yet the nodes below them
+	ScannedStatus
+	// StableStatus means that that the information about this node is reliable
+	StableStatus
+)
+
 // NewNodes creates a new state for managing nodes (data about files or
 // directories on the local file system).
 func NewNodes() *Nodes {
 	nodes := &Nodes{
-		ByID:            make(map[ID]*Node),
-		ByParentID:      make(map[ID]map[ID]*Node),
-		ByIno:           make(map[uint64]*Node),
-		ScansInProgress: 0,
+		ByID:       make(map[ID]*Node),
+		ByParentID: make(map[ID]map[ID]*Node),
+		ByIno:      make(map[uint64]*Node),
 	}
 	root := &Node{
 		ID:       RootID,
 		ParentID: RootID,
 		Name:     "",
 		Type:     types.DirType,
+		Status:   InitialStatus,
 	}
 	nodes.Upsert(root)
 	return nodes
@@ -106,7 +122,24 @@ func (nodes *Nodes) Upsert(n *Node) {
 		nodes.detachParent(n.ID)
 	}
 	nodes.ByID[n.ID] = n
-	nodes.attachParent(n)
+	if n.ID != RootID {
+		nodes.attachParent(n)
+	}
+}
+
+func (nodes *Nodes) MarkAsScanned(node *Node) {
+	node.Status = ScannedStatus
+	for _, child := range nodes.Children(node) {
+		if child.Type == types.DirType && child.Status != StableStatus {
+			return
+		}
+	}
+	node.Status = StableStatus
+	if node.ID == RootID {
+		return
+	}
+	parent := nodes.ByID[node.ParentID]
+	nodes.MarkAsScanned(parent)
 }
 
 // Children returns a map of id -> node for the children of the given

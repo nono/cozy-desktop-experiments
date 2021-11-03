@@ -48,7 +48,7 @@ func (state *State) findNextCommand() []Command {
 	// TODO We should optimize to start synchronizing sooner.
 	// For example, we can start uploading a file when fetching changes is done
 	// (even if the local scans are still in progress).
-	if state.Nodes.ScansInProgress > 0 || state.Docs.FetchingChanges {
+	if state.Nodes.Root().Status != local.StableStatus || state.Docs.FetchingChanges {
 		return []Command{}
 	}
 
