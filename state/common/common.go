@@ -11,6 +11,8 @@ import (
 type Links struct {
 	ByID       map[ID]*Link
 	ByParentID map[ID]map[ID]*Link // parentID -> map of children
+	ByLocalID  map[local.ID]*Link
+	ByRemoteID map[remote.ID]*Link
 }
 
 // Link is the last known state of a file or directory that was common to a
@@ -33,6 +35,9 @@ type ID uint64
 // RootID is the identifier for the root.
 const RootID ID = 1
 
+// nextID is the next available identifier to assign to a new link.
+var nextID ID = RootID + 1 // 0 is for unknown
+
 // NewLinks creates a new state.
 func NewLinks() *Links {
 	root := &Link{
@@ -46,6 +51,8 @@ func NewLinks() *Links {
 	return &Links{
 		ByID:       map[ID]*Link{RootID: root},
 		ByParentID: make(map[ID]map[ID]*Link),
+		ByLocalID:  map[local.ID]*Link{root.LocalID: root},
+		ByRemoteID: map[remote.ID]*Link{root.RemoteID: root},
 	}
 }
 
@@ -58,4 +65,16 @@ func (links *Links) Root() *Link {
 // Children returns a map of ID -> link for the children of the given link.
 func (links *Links) Children(parent *Link) map[ID]*Link {
 	return links.ByParentID[parent.ID]
+}
+
+// Add adds a link to the links state, ie it assign an id to it and indexes it.
+func (links *Links) Add(link *Link) {
+	link.ID = nextID
+	nextID++
+	links.ByParentID[link.ID] = map[ID]*Link{}
+	links.ByID[link.ID] = link
+	children := links.ByParentID[link.ParentID]
+	children[link.ID] = link
+	links.ByLocalID[link.LocalID] = link
+	links.ByRemoteID[link.RemoteID] = link
 }

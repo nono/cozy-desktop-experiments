@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/nono/cozy-desktop-experiments/state/common"
 	"github.com/nono/cozy-desktop-experiments/state/local"
+	"github.com/nono/cozy-desktop-experiments/state/remote"
 	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
@@ -38,7 +40,7 @@ func (e EventStatDone) Update(state *State) []Command {
 		state.Nodes.Upsert(node)
 		return []Command{CmdScan{"."}}
 	}
-	return []Command{CmdStop{}}
+	return []Command{CmdStop{}} // FIXME
 }
 
 // CmdScan is a command to list files and directories inside a directory.
@@ -91,6 +93,74 @@ func (e EventScanDone) Update(state *State) []Command {
 	if len(cmds) > 0 {
 		return cmds
 	}
+	return state.findNextCommand()
+}
+
+// CmdMkdir is a command for creating a directory on the local file system.
+type CmdMkdir struct {
+	Path string
+}
+
+// Exec is required by Command interface.
+func (cmd CmdMkdir) Exec(platform Platform) {
+	var info fs.FileInfo
+	localFS := platform.FS()
+	err := localFS.Mkdir(cmd.Path)
+	if err == nil {
+		info, err = localFS.Stat(cmd.Path)
+	}
+	platform.Notify(EventMkdirDone{Path: cmd.Path, Info: info, Error: err})
+}
+
+// EventMkdirDone is notified when a directory has been by the desktop client
+// on the local file system.
+type EventMkdirDone struct {
+	Path  string
+	Info  fs.FileInfo
+	Error error
+}
+
+// Update is required by Event interface.
+func (e EventMkdirDone) Update(state *State) []Command {
+	parent, err := state.Nodes.ByPath(filepath.Dir(e.Path))
+	if err != nil || !e.Info.IsDir() {
+		// TODO handle error
+	}
+	node := &local.Node{
+		ParentID: parent.ID,
+		Name:     e.Info.Name(),
+		Type:     types.DirType,
+		Status:   local.StableStatus,
+		Ino:      getIno(e.Info),
+	}
+	state.Nodes.Upsert(node)
+
+	parentLink, ok := state.Links.ByLocalID[parent.ID]
+	if !ok {
+		// TODO handle error
+	}
+	parentDoc, ok := state.Docs.ByID[parentLink.RemoteID]
+	if !ok {
+		// TODO handle error
+	}
+	childrenDocs := state.Docs.Children(parentDoc)
+	var doc *remote.Doc
+	for _, child := range childrenDocs {
+		if child.Name == node.Name {
+			doc = child
+		}
+	}
+	if doc == nil {
+		// TODO handle error
+	}
+	link := &common.Link{
+		LocalID:  node.ID,
+		RemoteID: doc.ID,
+		ParentID: parentLink.ID,
+		Name:     node.Name,
+		Type:     types.DirType,
+	}
+	state.Links.Add(link)
 	return state.findNextCommand()
 }
 
