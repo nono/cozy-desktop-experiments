@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"io/fs"
 	"path/filepath"
 	"syscall"
@@ -68,7 +69,7 @@ func (e EventScanDone) Update(state *State) []Command {
 	cmds := []Command{}
 	parent, err := state.Nodes.ByPath(e.Path)
 	if err != nil {
-		// TODO handle error
+		fmt.Println("TODO") // TODO handle error
 	}
 	for _, entry := range e.Entries {
 		node := &local.Node{
@@ -124,7 +125,7 @@ type EventMkdirDone struct {
 func (e EventMkdirDone) Update(state *State) []Command {
 	parent, err := state.Nodes.ByPath(filepath.Dir(e.Path))
 	if err != nil || !e.Info.IsDir() {
-		// TODO handle error
+		fmt.Println("TODO") // TODO handle error
 	}
 	node := &local.Node{
 		ParentID: parent.ID,
@@ -137,11 +138,11 @@ func (e EventMkdirDone) Update(state *State) []Command {
 
 	parentLink, ok := state.Links.ByLocalID[parent.ID]
 	if !ok {
-		// TODO handle error
+		fmt.Println("TODO") // TODO handle error
 	}
 	parentDoc, ok := state.Docs.ByID[parentLink.RemoteID]
 	if !ok {
-		// TODO handle error
+		fmt.Println("TODO") // TODO handle error
 	}
 	childrenDocs := state.Docs.Children(parentDoc)
 	var doc *remote.Doc
@@ -151,7 +152,8 @@ func (e EventMkdirDone) Update(state *State) []Command {
 		}
 	}
 	if doc == nil {
-		// TODO handle error
+		fmt.Println("TODO") // TODO handle error
+		return []Command{}
 	}
 	link := &common.Link{
 		LocalID:  node.ID,

@@ -57,6 +57,9 @@ const (
 	StableStatus
 )
 
+// maxDepth is the maximal number of / in a path.
+const maxDepth = 4096
+
 // NewNodes creates a new state for managing nodes (data about files or
 // directories on the local file system).
 func NewNodes() *Nodes {
@@ -79,6 +82,22 @@ func NewNodes() *Nodes {
 // Root returns the node for the root of the synchronized directory.
 func (nodes *Nodes) Root() *Node {
 	return nodes.ByID[RootID]
+}
+
+// Path return the path for the given node.
+func (nodes *Nodes) Path(doc *Node) string {
+	return nodes.path(doc, maxDepth)
+}
+
+func (nodes *Nodes) path(doc *Node, remaining int) string {
+	if doc.ID == RootID {
+		return ""
+	}
+	if remaining == 0 {
+		panic(errors.New("Max depth reached"))
+	}
+	parent := nodes.ByID[doc.ParentID]
+	return filepath.Join(nodes.Path(parent), doc.Name)
 }
 
 // ByPath returns the node with the given path (if it exists).

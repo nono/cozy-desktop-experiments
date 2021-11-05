@@ -1,7 +1,12 @@
 package state
 
 import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/nono/cozy-desktop-experiments/state/common"
 	"github.com/nono/cozy-desktop-experiments/state/remote"
+	"github.com/nono/cozy-desktop-experiments/state/types"
 )
 
 // CmdRefreshToken is a command to refresh the access token of the OAuth
@@ -103,3 +108,52 @@ func (e EventSynchronized) Update(state *State) []Command {
 }
 
 const nbChangesPerPage = 10_000
+
+// CmdCreateDir is a command for creating a directory on the Cozy.
+type CmdCreateDir struct {
+	ParentID remote.ID
+	Name     string
+}
+
+// Exec is required by Command interface.
+func (cmd CmdCreateDir) Exec(platform Platform) {
+	doc, err := platform.Client().CreateDir(cmd.ParentID, cmd.Name)
+	platform.Notify(EventCreateDirDone{Doc: doc, Error: err})
+}
+
+// EventCreateDirDone is notified when a directory has been by the desktop
+// client on the Cozy.
+type EventCreateDirDone struct {
+	Doc   *remote.Doc
+	Error error
+}
+
+// Update is required by Event interface.
+func (e EventCreateDirDone) Update(state *State) []Command {
+	state.Docs.Upsert(e.Doc)
+
+	parentLink, ok := state.Links.ByRemoteID[e.Doc.DirID]
+	if !ok {
+		fmt.Println("TODO") // TODO handle error
+	}
+	parentNode, ok := state.Nodes.ByID[parentLink.LocalID]
+	if !ok {
+		fmt.Println("TODO") // TODO handle error
+	}
+	// FIXME if the node has been renamed/moved while the directory has been
+	// created on the Cozy, it won't be found
+	parentPath := state.Nodes.Path(parentNode)
+	node, err := state.Nodes.ByPath(filepath.Join(parentPath, e.Doc.Name))
+	if err != nil {
+		fmt.Println("TODO") // TODO handle error
+	}
+	link := &common.Link{
+		LocalID:  node.ID,
+		RemoteID: e.Doc.ID,
+		ParentID: parentLink.ID,
+		Name:     e.Doc.Name,
+		Type:     types.DirType,
+	}
+	state.Links.Add(link)
+	return state.findNextCommand()
+}
