@@ -7,8 +7,8 @@ type EventStart struct{}
 func (e EventStart) Update(state *State) []Command {
 	state.Docs.Refreshing = true
 	return []Command{
-		CmdStat{"."},
-		CmdRefreshToken{},
+		CmdStat{Path: "."},
+		CmdRefreshToken{Clock: state.Clock},
 	}
 }
 

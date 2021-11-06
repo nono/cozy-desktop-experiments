@@ -8,8 +8,8 @@ import (
 
 // NewReadOnly returns a mock of a cozy-stack client that can be used in tests,
 // and it panics if any write operation is called.
-func NewReadOnly(address string) remote.Client {
-	fake := NewFake(address).(*Fake)
+func NewReadOnly(address string) *ReadOnly {
+	fake := NewFake(address)
 	return &ReadOnly{Fake: fake}
 }
 
@@ -41,3 +41,5 @@ func (ro *ReadOnly) Refresh() error {
 func (ro *ReadOnly) Synchronized() error {
 	return ro.Fake.Synchronized()
 }
+
+var _ remote.Client = &ReadOnly{}

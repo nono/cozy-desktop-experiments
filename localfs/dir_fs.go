@@ -14,7 +14,7 @@ import (
 
 // NewDirFS returns a local.FS that makes changes to the given Cozy directory
 // on the local disk.
-func NewDirFS(dir string) local.FS {
+func NewDirFS(dir string) DirFS {
 	return DirFS(dir)
 }
 
@@ -80,7 +80,7 @@ func (dir DirFS) RemoveAll(path string) error {
 // ToMemFS will create a MemFS with the same files and directories. It can be
 // useful for testing purpose.
 func (dir DirFS) ToMemFS() (*MemFS, error) {
-	mem := NewMemFS().(*MemFS)
+	mem := NewMemFS()
 	err := dir.addToMemFS(mem, ".")
 	return mem, err
 }
@@ -105,4 +105,5 @@ func (dir DirFS) addToMemFS(mem *MemFS, path string) error {
 	return nil
 }
 
+var _ local.FS = DirFS(".")
 var _ fs.FS = DirFS(".")

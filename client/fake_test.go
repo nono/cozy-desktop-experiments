@@ -12,13 +12,13 @@ import (
 
 func TestFakeClient(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		client := NewFake("http://cozy.localhost:8080/").(*Fake)
+		client := NewFake("http://cozy.localhost:8080/")
 		client.AddInitialDocs()
 		require.NoError(t, client.CheckInvariants())
 	})
 
 	t.Run("basic", func(t *testing.T) {
-		client := NewFake("http://cozy.localhost:8080/").(*Fake)
+		client := NewFake("http://cozy.localhost:8080/")
 		client.AddInitialDocs()
 		foo, err := client.CreateDir(remote.RootID, "foo")
 		require.NoError(t, err, "CreateDir foo")
@@ -30,7 +30,7 @@ func TestFakeClient(t *testing.T) {
 	})
 
 	t.Run("invalid name", func(t *testing.T) {
-		client := NewFake("http://cozy.localhost:8080/").(*Fake)
+		client := NewFake("http://cozy.localhost:8080/")
 		client.AddInitialDocs()
 		_, err := client.CreateDir(remote.RootID, "foo/")
 		require.Error(t, err)
@@ -71,12 +71,12 @@ func (cmp *cmpClient) Init(t *rapid.T) {
 	require.NoError(t, err)
 	cmp.inst = inst
 	addr := inst.Address()
-	cmp.client = New(addr).(*Client)
+	cmp.client = New(addr)
 	require.NoError(t, cmp.client.Register())
 	require.NoError(t, inst.CreateAccessToken(cmp.client))
 	changes, err := cmp.client.Changes(nil, 10_000, false)
 	require.NoError(t, err)
-	cmp.fake = NewFake(addr).(*Fake)
+	cmp.fake = NewFake(addr)
 	cmp.fake.AddInitialDocs(changes.Docs...)
 	cmp.fake.MatchSequence(changes.Seq)
 	cmp.parents = []*remote.Doc{

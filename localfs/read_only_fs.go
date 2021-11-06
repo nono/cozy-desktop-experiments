@@ -9,8 +9,8 @@ import (
 
 // NewMemFS returns an in-memory mock of local.FS for tests that panic if any
 // write operation is called on it.
-func NewReadOnlyFS() local.FS {
-	mem := NewMemFS().(*MemFS)
+func NewReadOnlyFS() *ReadOnlyFS {
+	mem := NewMemFS()
 	return &ReadOnlyFS{MemFS: mem}
 }
 
@@ -43,4 +43,5 @@ func (ro *ReadOnlyFS) RemoveAll(path string) error {
 	panic(errors.New("RemoveAll has been called for ReadOnlyFS"))
 }
 
+var _ local.FS = &ReadOnlyFS{}
 var _ fs.FS = &ReadOnlyFS{}

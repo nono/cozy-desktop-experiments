@@ -15,7 +15,7 @@ import (
 )
 
 // NewMemFS returns an in-memory mock of local.FS for tests.
-func NewMemFS() local.FS {
+func NewMemFS() *MemFS {
 	baseDir := &memDir{
 		info: &memFileInfo{
 			name:    ".",
@@ -270,6 +270,7 @@ func endWithSlash(path string) bool {
 	return path[len(path)-1] == filepath.Separator
 }
 
+var _ local.FS = &MemFS{}
 var _ fs.FS = &MemFS{}
 var _ fs.DirEntry = &memFile{}
 var _ fs.DirEntry = &memDir{}

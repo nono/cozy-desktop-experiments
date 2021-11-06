@@ -58,7 +58,7 @@ func (state *State) findNextCommand() []Command {
 	}
 
 	return []Command{
-		CmdSynchronized{},
+		CmdSynchronized{Clock: state.Clock},
 	}
 }
 

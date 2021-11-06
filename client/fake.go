@@ -45,7 +45,7 @@ type Change struct {
 
 // NewFake creates a fake client that can be used for tests. It doesn't make
 // any HTTP request, it just simulate them via an in-memory mock.
-func NewFake(address string) remote.Client {
+func NewFake(address string) *Fake {
 	return &Fake{
 		Address:      address,
 		SyncCount:    0,
@@ -358,3 +358,5 @@ func extractGeneration(rev remote.Rev) int {
 	}
 	return n
 }
+
+var _ remote.Client = &Fake{}

@@ -33,7 +33,7 @@ type Client struct {
 }
 
 // New returns a client for cozy-stack.
-func New(address string) remote.Client {
+func New(address string) *Client {
 	// TODO update the OAuth client on new versions of the client
 	return &Client{
 		Address: address,
@@ -347,3 +347,5 @@ func (r *request) Do() (*http.Response, error) {
 	}
 	return r.client.Do(req)
 }
+
+var _ remote.Client = &Client{}

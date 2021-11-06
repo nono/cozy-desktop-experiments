@@ -14,6 +14,7 @@ type Docs struct {
 	FetchingChanges bool
 	Refreshing      bool
 	RefreshedAt     types.Clock
+	SynchronizedAt  types.Clock
 }
 
 // Doc describes a CouchDB document for the io.cozy.files doctype on the Cozy.

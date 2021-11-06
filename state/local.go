@@ -99,7 +99,9 @@ func (e EventScanDone) Update(state *State) []Command {
 
 // CmdMkdir is a command for creating a directory on the local file system.
 type CmdMkdir struct {
-	Path string
+	Path         string
+	RemoteID     remote.ID
+	ParentLinkID common.ID
 }
 
 // Exec is required by Command interface.
@@ -110,20 +112,20 @@ func (cmd CmdMkdir) Exec(platform Platform) {
 	if err == nil {
 		info, err = localFS.Stat(cmd.Path)
 	}
-	platform.Notify(EventMkdirDone{Path: cmd.Path, Info: info, Error: err})
+	platform.Notify(EventMkdirDone{Cmd: cmd, Info: info, Error: err})
 }
 
 // EventMkdirDone is notified when a directory has been by the desktop client
 // on the local file system.
 type EventMkdirDone struct {
-	Path  string
+	Cmd   CmdMkdir
 	Info  fs.FileInfo
 	Error error
 }
 
 // Update is required by Event interface.
 func (e EventMkdirDone) Update(state *State) []Command {
-	parent, err := state.Nodes.ByPath(filepath.Dir(e.Path))
+	parent, err := state.Nodes.ByPath(filepath.Dir(e.Cmd.Path))
 	if err != nil || !e.Info.IsDir() {
 		fmt.Println("TODO") // TODO handle error
 	}
@@ -136,29 +138,10 @@ func (e EventMkdirDone) Update(state *State) []Command {
 	}
 	state.Nodes.Upsert(node)
 
-	parentLink, ok := state.Links.ByLocalID[parent.ID]
-	if !ok {
-		fmt.Println("TODO") // TODO handle error
-	}
-	parentDoc, ok := state.Docs.ByID[parentLink.RemoteID]
-	if !ok {
-		fmt.Println("TODO") // TODO handle error
-	}
-	childrenDocs := state.Docs.Children(parentDoc)
-	var doc *remote.Doc
-	for _, child := range childrenDocs {
-		if child.Name == node.Name {
-			doc = child
-		}
-	}
-	if doc == nil {
-		fmt.Println("TODO") // TODO handle error
-		return []Command{}
-	}
 	link := &common.Link{
 		LocalID:  node.ID,
-		RemoteID: doc.ID,
-		ParentID: parentLink.ID,
+		RemoteID: e.Cmd.RemoteID,
+		ParentID: e.Cmd.ParentLinkID,
 		Name:     node.Name,
 		Type:     types.DirType,
 	}
