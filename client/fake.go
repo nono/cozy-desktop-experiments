@@ -303,7 +303,7 @@ func (f *Fake) updateTreeRev(dir *remote.Doc) {
 
 // isInTrash returns true if the doc is a descendant of the trash.
 func (f *Fake) isInTrash(doc *remote.Doc) bool {
-	switch doc.DirID {
+	switch doc.ID {
 	case remote.RootID:
 		return false
 	case remote.TrashID:
@@ -311,7 +311,7 @@ func (f *Fake) isInTrash(doc *remote.Doc) bool {
 	}
 	parent, ok := f.ByID[doc.DirID]
 	if !ok {
-		panic(errors.New("parent not found"))
+		panic(fmt.Errorf("parent not found for %#v", doc))
 	}
 	return f.isInTrash(parent)
 }

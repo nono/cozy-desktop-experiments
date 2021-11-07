@@ -1,6 +1,8 @@
 package state
 
 import (
+	"fmt"
+
 	"github.com/nono/cozy-desktop-experiments/state/common"
 	"github.com/nono/cozy-desktop-experiments/state/local"
 	"github.com/nono/cozy-desktop-experiments/state/remote"
@@ -137,6 +139,9 @@ type EventCreateDirDone struct {
 
 // Update is required by Event interface.
 func (e EventCreateDirDone) Update(state *State) []Command {
+	if e.Error != nil {
+		panic(fmt.Errorf("EventCreateDirDone: %s\n", e.Error))
+	}
 	state.Docs.Upsert(e.Doc)
 	link := &common.Link{
 		LocalID:  e.Cmd.LocalID,

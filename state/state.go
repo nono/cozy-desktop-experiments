@@ -2,6 +2,7 @@ package state
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/nono/cozy-desktop-experiments/state/common"
 	"github.com/nono/cozy-desktop-experiments/state/local"
@@ -53,8 +54,8 @@ func (state *State) findNextCommand() []Command {
 	}
 
 	root := state.Links.Root()
-	if cmd := state.findMetadataCommand(root); cmd != nil {
-		return []Command{*cmd}
+	if cmd, ok := state.findMetadataCommand(root); ok {
+		return []Command{cmd}
 	}
 
 	return []Command{
@@ -62,40 +63,50 @@ func (state *State) findNextCommand() []Command {
 	}
 }
 
-func (state *State) findMetadataCommand(link *common.Link) *Command {
+func (state *State) findMetadataCommand(link *common.Link) (Command, bool) {
 	node := state.Nodes.ByID[link.LocalID]
 	doc := state.Docs.ByID[link.RemoteID]
 
-	switch {
-	case node == nil && doc == nil:
-		// TODO delete link
-		return nil
-	case node == nil:
-		// TODO delete the doc, and then the link
-		return nil
-	case doc == nil:
-		// TODO delete the node, and then the link
-		return nil
+	if node == nil || doc == nil {
+		panic(fmt.Errorf("Unexpected state for %#v", link)) // FIXME
 	}
 
 	// TODO compare node & doc
 	if link.Type != types.DirType {
-		return nil
+		return nil, false
 	}
 
 	nodes := state.Nodes.Children(node)
-	links := state.Links.Children(link)
-	docs := state.Docs.Children(doc)
-
-	// TODO WIP
-	fmt.Printf("nodes  = %v\n", nodes)
-	fmt.Printf("links = %v\n", links)
-	fmt.Printf("docs = %v\n", docs)
-
-	for _, link := range links {
-		if cmd := state.findMetadataCommand(link); cmd != nil {
-			return cmd
+	for _, child := range nodes {
+		if _, ok := state.Links.ByLocalID[child.ID]; !ok {
+			return &CmdCreateDir{
+				ParentID:     doc.ID,
+				Name:         child.Name,
+				LocalID:      child.ID,
+				ParentLinkID: link.ID,
+			}, true
 		}
 	}
-	return nil
+
+	docs := state.Docs.Children(doc)
+	if len(docs) != len(nodes) {
+		for _, child := range docs {
+			if _, ok := state.Links.ByRemoteID[child.ID]; !ok {
+				parentPath := state.Nodes.Path(node)
+				return &CmdMkdir{
+					Path:         filepath.Join(parentPath, child.Name),
+					RemoteID:     child.ID,
+					ParentLinkID: link.ID,
+				}, true
+			}
+		}
+	}
+
+	links := state.Links.Children(link)
+	for _, link := range links {
+		if cmd, ok := state.findMetadataCommand(link); ok {
+			return cmd, ok
+		}
+	}
+	return nil, false
 }

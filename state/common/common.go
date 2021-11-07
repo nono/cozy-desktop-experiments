@@ -71,9 +71,12 @@ func (links *Links) Children(parent *Link) map[ID]*Link {
 func (links *Links) Add(link *Link) {
 	link.ID = nextID
 	nextID++
-	links.ByParentID[link.ID] = map[ID]*Link{}
 	links.ByID[link.ID] = link
 	children := links.ByParentID[link.ParentID]
+	if children == nil {
+		children = map[ID]*Link{}
+		links.ByParentID[link.ParentID] = children
+	}
 	children[link.ID] = link
 	links.ByLocalID[link.LocalID] = link
 	links.ByRemoteID[link.RemoteID] = link

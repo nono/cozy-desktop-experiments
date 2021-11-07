@@ -17,6 +17,7 @@ func main() {
 
 	// remoteClient := client.New("http://cozy.localhost:8080/")
 	remoteClient := client.NewFake("http://cozy.localhost:8080/")
+	remoteClient.AddInitialDocs()
 
 	fmt.Println("Start")
 	platform := platform.New(localFS, remoteClient)
