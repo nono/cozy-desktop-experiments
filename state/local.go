@@ -34,6 +34,9 @@ type EventStatDone struct {
 
 // Update is required by Event interface.
 func (e EventStatDone) Update(state *State) []Command {
+	if e.Error != nil {
+		panic(fmt.Errorf("EventStatDone: %s\n", e.Error)) // FIXME
+	}
 	if e.Cmd.Path == "." && e.Error == nil && e.Info.IsDir() {
 		node := state.Nodes.Root()
 		node.Ino = getIno(e.Info)
@@ -66,10 +69,13 @@ type EventScanDone struct {
 
 // Update is required by Event interface.
 func (e EventScanDone) Update(state *State) []Command {
+	if e.Error != nil {
+		panic(fmt.Errorf("EventScanDone: %s\n", e.Error)) // FIXME
+	}
 	cmds := []Command{}
 	parent, err := state.Nodes.ByPath(e.Path)
 	if err != nil {
-		fmt.Println("TODO") // TODO handle error
+		panic(fmt.Errorf("EventScanDone: %s\n", err)) // FIXME
 	}
 	for _, entry := range e.Entries {
 		node := &local.Node{
@@ -125,9 +131,12 @@ type EventMkdirDone struct {
 
 // Update is required by Event interface.
 func (e EventMkdirDone) Update(state *State) []Command {
+	if e.Error != nil {
+		panic(fmt.Errorf("EventMkdirDone: %s\n", e.Error)) // FIXME
+	}
 	parent, err := state.Nodes.ByPath(filepath.Dir(e.Cmd.Path))
 	if err != nil || !e.Info.IsDir() {
-		fmt.Println("TODO") // TODO handle error
+		panic(fmt.Errorf("EventMkdirDone: %s\n", err)) // FIXME
 	}
 	node := &local.Node{
 		ParentID: parent.ID,

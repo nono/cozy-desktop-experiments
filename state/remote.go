@@ -30,7 +30,9 @@ type EventTokenRefreshed struct {
 
 // Update is required by Event interface.
 func (e EventTokenRefreshed) Update(state *State) []Command {
-	// TODO handle error
+	if e.Error != nil {
+		panic(fmt.Errorf("EventTokenRefreshed: %s\n", e.Error)) // FIXME
+	}
 	state.Docs.Refreshing = false
 	state.Docs.RefreshedAt = e.Cmd.Clock
 	state.Docs.FetchingChanges = true
@@ -67,7 +69,9 @@ type EventChangesDone struct {
 
 // Update is required by Event interface.
 func (e EventChangesDone) Update(state *State) []Command {
-	// TODO handle error
+	if e.Error != nil {
+		panic(fmt.Errorf("EventChangesDone: %s\n", e.Error)) // FIXME
+	}
 	state.Docs.Seq = e.Seq
 	for _, change := range e.Docs {
 		if change.Deleted {
@@ -106,7 +110,9 @@ type EventSynchronized struct {
 
 // Update is required by Event interface.
 func (e EventSynchronized) Update(state *State) []Command {
-	// TODO handle error
+	if e.Error != nil {
+		panic(fmt.Errorf("EventSynchronized: %s\n", e.Error)) // FIXME
+	}
 	// TODO continuous synchonization
 	state.Docs.SynchronizedAt = e.Cmd.Clock
 	state.Nodes.PrintTree()
@@ -140,7 +146,7 @@ type EventCreateDirDone struct {
 // Update is required by Event interface.
 func (e EventCreateDirDone) Update(state *State) []Command {
 	if e.Error != nil {
-		panic(fmt.Errorf("EventCreateDirDone: %s\n", e.Error))
+		panic(fmt.Errorf("EventCreateDirDone: %s\n", e.Error)) // FIXME
 	}
 	state.Docs.Upsert(e.Doc)
 	link := &common.Link{

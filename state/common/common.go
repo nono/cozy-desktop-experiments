@@ -1,6 +1,9 @@
 package common
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/nono/cozy-desktop-experiments/state/local"
 	"github.com/nono/cozy-desktop-experiments/state/remote"
 	"github.com/nono/cozy-desktop-experiments/state/types"
@@ -80,4 +83,33 @@ func (links *Links) Add(link *Link) {
 	children[link.ID] = link
 	links.ByLocalID[link.LocalID] = link
 	links.ByRemoteID[link.RemoteID] = link
+}
+
+// CheckInvariants can be used to detect some bugs by checking some properties
+// that should always be true if links is manipulated as expected.
+func (links *Links) CheckInvariants() error {
+	if len(links.ByID) != len(links.ByParentID)+1 {
+		return errors.New("Invalid number of items in ByParentID")
+	}
+	if len(links.ByID) != len(links.ByLocalID) {
+		return errors.New("Invalid number of items in ByLocalID")
+	}
+	if len(links.ByID) != len(links.ByRemoteID) {
+		return errors.New("Invalid number of items in ByRemoteID")
+	}
+
+	for id, link := range links.ByID {
+		if id != RootID {
+			if _, ok := links.ByParentID[link.ParentID]; !ok {
+				return fmt.Errorf("parent link not found for %#v", link)
+			}
+		}
+		if actual, ok := links.ByLocalID[link.LocalID]; !ok || actual != link {
+			return fmt.Errorf("ByLocalID not valid for %#v", link)
+		}
+		if actual, ok := links.ByRemoteID[link.RemoteID]; !ok || actual != link {
+			return fmt.Errorf("ByRemoteID not valid for %#v", link)
+		}
+	}
+	return nil
 }
