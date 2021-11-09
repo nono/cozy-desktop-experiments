@@ -32,6 +32,11 @@ func (ro *ReadOnly) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	panic(errors.New("Trash has been called on ReadOnly client"))
 }
 
+// EmptyTrash is required by the remote.Client interface.
+func (ro *ReadOnly) EmptyTrash() error {
+	panic(errors.New("EmptyTrash has been called on ReadOnly client"))
+}
+
 // Refresh is required by the remote.Client interface.
 func (ro *ReadOnly) Refresh() error {
 	return ro.Fake.Refresh()

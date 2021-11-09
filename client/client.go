@@ -190,6 +190,21 @@ func (c *Client) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	return jsonapi.ParseDoc(res.Body)
 }
 
+// EmptyTrash is required by remote.Client interface.
+func (c *Client) EmptyTrash() error {
+	res, err := c.NewRequest(http.MethodDelete, "/files/trash").Do()
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode/100 != 2 {
+		// Flush the body to allow reusing the connection with keepalive
+		_, _ = io.Copy(ioutil.Discard, res.Body)
+		return fmt.Errorf("invalid status code %d for EmptyTrash", res.StatusCode)
+	}
+	return nil
+}
+
 // Refresh is required by the remote.Client interface.
 func (c *Client) Refresh() error {
 	body := strings.NewReader(url.Values{

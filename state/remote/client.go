@@ -17,7 +17,9 @@ type Client interface {
 	// Trash will put a file or directory inside the trash on the Cozy.
 	Trash(doc *Doc) (*Doc, error)
 
-	// TODO add an empty trash function for tests
+	// EmptyTrash will delete the files and directories in the trash. Useful
+	// for tests.
+	EmptyTrash() error
 
 	// Refresh can be used to refresh the OAuth access token.
 	Refresh() error
@@ -36,7 +38,7 @@ type ChangesResponse struct {
 	Pending int
 }
 
-// ChangedDoc is a result item from the changes fedd.
+// ChangedDoc is a result item from the changes feed.
 type ChangedDoc struct {
 	*Doc
 	Deleted bool

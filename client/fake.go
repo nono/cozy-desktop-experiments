@@ -185,6 +185,18 @@ func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 	return was, nil
 }
 
+// EmptyTrash is required by remote.Client interface.
+func (f *Fake) EmptyTrash() error {
+	for id, doc := range f.ByID {
+		if !f.isInTrash(doc) {
+			continue
+		}
+		f.addDeletedToChangesFeed(id)
+		delete(f.ByID, id)
+	}
+	return nil
+}
+
 // Refresh is required by the remote.Client interface.
 func (f *Fake) Refresh() error {
 	return nil
@@ -278,6 +290,22 @@ func (f *Fake) addToChangesFeed(doc *remote.Doc) {
 	change := Change{
 		Seq:        len(f.Feed) + 1,
 		ChangedDoc: &remote.ChangedDoc{Doc: doc, Deleted: false},
+	}
+	f.Feed = append(f.Feed, change)
+}
+
+// addDeletedToChangesFeed adds an entry to the changes feed for a deleted
+// document. It masks previous entries for the same document, as CouchDB does.
+func (f *Fake) addDeletedToChangesFeed(id remote.ID) {
+	for i, change := range f.Feed {
+		if change.Doc.ID == id {
+			f.Feed[i].Skip = true
+		}
+	}
+	doc := &remote.Doc{ID: id}
+	change := Change{
+		Seq:        len(f.Feed) + 1,
+		ChangedDoc: &remote.ChangedDoc{Doc: doc, Deleted: true},
 	}
 	f.Feed = append(f.Feed, change)
 }
