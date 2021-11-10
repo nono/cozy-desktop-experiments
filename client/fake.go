@@ -188,7 +188,7 @@ func (f *Fake) Trash(doc *remote.Doc) (*remote.Doc, error) {
 // EmptyTrash is required by remote.Client interface.
 func (f *Fake) EmptyTrash() error {
 	for id, doc := range f.ByID {
-		if !f.isInTrash(doc) {
+		if id == remote.TrashID || !f.isInTrash(doc) {
 			continue
 		}
 		f.addDeletedToChangesFeed(id)

@@ -38,6 +38,20 @@ func TestFakeClient(t *testing.T) {
 		require.Error(t, err)
 		_, err = client.CreateDir(remote.RootID, "foo\nbar")
 		require.Error(t, err)
+		require.NoError(t, client.CheckInvariants())
+	})
+
+	t.Run("empty trash", func(t *testing.T) {
+		client := NewFake("http://cozy.localhost:8080/")
+		client.AddInitialDocs()
+		dir, err := client.CreateDir(remote.RootID, "foo")
+		require.NoError(t, err)
+		_, err = client.Trash(dir)
+		require.NoError(t, err)
+		err = client.EmptyTrash()
+		require.NoError(t, err)
+		require.NotContains(t, client.ByID, dir.ID)
+		require.NoError(t, client.CheckInvariants())
 	})
 }
 
