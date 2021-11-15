@@ -1,3 +1,4 @@
 node_modules
 scripts
 tmp
+/web/assets/cozy-bs.min.css

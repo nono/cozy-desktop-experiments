@@ -7,14 +7,17 @@ MAKEFLAGS += --no-builtin-rules
 SHELL := bash
 
 ## install: compile the code and installs in binary in $GOPATH/bin
-install:
+install: web/assets/cozy-bs.min.css
 	@go install
 .PHONY: install
 
 ## run: start the client for local development
-run:
+run: web/assets/cozy-bs.min.css
 	@go run .
 .PHONY: run
+
+web/assets/cozy-bs.min.css:
+	@curl https://unpkg.com/cozy-bootstrap@1.11.3/dist/cozy-bs.min.css -o $@
 
 ## lint: enforce a consistent code style and detect code smells
 lint: scripts/golangci-lint
