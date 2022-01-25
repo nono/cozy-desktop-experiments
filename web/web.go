@@ -12,11 +12,11 @@ import (
 )
 
 // Start will listen for http requests, and serve them.
-func Start(port string) {
+func Start(port string) error {
 	http.Handle("/", http.FileServer(http.Dir("./web/assets")))
 	http.HandleFunc("/run", Run)
 	fmt.Println("Starting server at port " + port)
-	http.ListenAndServe(":"+port, nil)
+	return http.ListenAndServe(":"+port, nil)
 }
 
 func Run(w http.ResponseWriter, r *http.Request) {
