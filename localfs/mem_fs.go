@@ -15,6 +15,7 @@ import (
 )
 
 // NewMemFS returns an in-memory mock of local.FS for tests.
+// TODO use https://github.com/hack-pad/hackpadfs ?
 func NewMemFS() *MemFS {
 	baseDir := &memDir{
 		info: &memFileInfo{
